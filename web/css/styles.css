@@ -343,6 +343,7 @@ a:hover { text-decoration: underline; }
 .dot.cyan   { background: var(--cyan); }
 .dot.red    { background: var(--red); }
 .dot.text   { background: var(--text); }
+.dot.band   { background: rgba(38,212,170,0.25); }
 
 /* ── Donut layout (chart + table side by side) ──────────────────────────── */
 .donut-layout {
@@ -436,6 +437,7 @@ a:hover { text-decoration: underline; }
   letter-spacing: 0.06em;
 }
 .skill-neg { color: var(--red) !important; }
+.forecast-table { margin-top: 16px; }
 .table-notes { margin-top: 12px; font-size: 11px; color: var(--text3); line-height: 1.6; }
 
 /* ── Chat Card ──────────────────────────────────────────────────────────── */

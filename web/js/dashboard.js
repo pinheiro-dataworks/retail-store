@@ -122,6 +122,7 @@ function renderAll(data) {
   renderWeeklyError(data.evaluation.weekly);
   renderResiduals(data.evaluation.residuals);
   renderHorizons(data.evaluation.horizons);
+  renderForecast(data.forecast);
 }
 
 /* ── Update charts driven by filters ───────────────────────────────────── */
@@ -805,6 +806,81 @@ function renderHorizons(hz) {
       },
     },
   });
+}
+
+/* ═══════════════════════════════ FORECAST ═════════════════════════════════ */
+function renderForecast(f) {
+  const ctx = document.getElementById('chart-forecast').getContext('2d');
+  const hist = f.history;
+  const labels = [...hist.dates, ...f.dates];
+  const pad = new Array(hist.dates.length - 1).fill(null);
+  const lastActual = hist.actual[hist.actual.length - 1];
+  // Forecast and band start at the last actual week so the lines join up.
+  const fc    = [...pad, lastActual, ...f.forecast];
+  const lower = [...pad, lastActual, ...f.lower];
+  const upper = [...pad, lastActual, ...f.upper];
+  const label = d => (f.holidays[d] ? `${d} · ${f.holidays[d]}` : d);
+
+  charts.forecast = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Upper', data: upper, borderWidth: 0, pointRadius: 0, fill: false },
+        {
+          label: '80% band', data: lower, borderWidth: 0, pointRadius: 0,
+          backgroundColor: alpha(C.teal, 0.18), fill: '-1',
+        },
+        {
+          label: 'Actual', data: [...hist.actual, ...new Array(f.dates.length).fill(null)],
+          borderColor: C.text, borderWidth: 2.5, pointRadius: 0, tension: 0.25,
+        },
+        {
+          label: 'Forecast', data: fc, borderColor: C.teal, borderWidth: 2.5,
+          borderDash: [6, 4], pointRadius: fc.map((v, i) => (i >= hist.dates.length ? 4 : 0)),
+          pointBackgroundColor: C.teal, tension: 0.25,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        filter: item => item.raw !== null && item.dataset.label !== 'Upper'
+          && !(item.dataset.label !== 'Actual' && item.dataIndex < hist.dates.length),
+        callbacks: {
+          title: items => label(labels[items[0].dataIndex]),
+          label: c => {
+            if (c.dataset.label === '80% band') {
+              const j = c.dataIndex - hist.dates.length;
+              return `80% band: ${fmtShort(f.lower[j])} – ${fmtShort(f.upper[j])}`;
+            }
+            return `${c.dataset.label}: ${fmtShort(c.parsed.y)}`;
+          },
+        },
+      }},
+      scales: {
+        x: { grid: BASE_GRID, ticks: { maxTicksLimit: 12, maxRotation: 0 } },
+        y: { grid: BASE_GRID, ticks: { callback: v => fmtShort(v) } },
+      },
+    },
+  });
+
+  document.getElementById('forecast-sub').textContent =
+    `${f.dates[0]} → ${f.dates[f.dates.length - 1]} · one direct LightGBM model per horizon, refit on all history`;
+
+  const types = Object.keys(f.by_store_type).sort();
+  document.getElementById('forecast-table-head').innerHTML =
+    `<tr><th>Week</th><th>Total</th><th>80% band</th>${types.map(t => `<th>Type ${t}</th>`).join('')}</tr>`;
+  document.getElementById('forecast-table-body').innerHTML = f.dates.map((d, i) => `
+    <tr>
+      <td>${d}${f.holidays[d] ? `<span class="kind-tag">${f.holidays[d]}</span>` : ''}</td>
+      <td>${fmtShort(f.forecast[i])}</td>
+      <td>${fmtShort(f.lower[i])} – ${fmtShort(f.upper[i])}</td>
+      ${types.map(t => `<td>${fmtShort(f.by_store_type[t][i])}</td>`).join('')}
+    </tr>`).join('');
 }
 
 /* ══════════════════════════════ FILTER PANEL ══════════════════════════════ */

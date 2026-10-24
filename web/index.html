@@ -404,6 +404,38 @@
 
   </section>
 
+  <!-- ── Forecast ──────────────────────────────────────────────────────── -->
+  <section class="dash-section" id="forecast-section">
+    <div class="section-label">Forecast &mdash; Next 8 Weeks</div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Total Weekly Sales Forecast</div>
+          <div class="chart-sub" id="forecast-sub">Direct LightGBM models refit on all history, one per horizon</div>
+        </div>
+        <div class="legend-row">
+          <span class="dot text"></span><span>Actual</span>
+          <span class="dot teal"></span><span>Forecast</span>
+          <span class="dot band"></span><span>80% band</span>
+        </div>
+      </div>
+      <div class="chart-wrap tall">
+        <canvas id="chart-forecast"></canvas>
+      </div>
+      <div class="table-scroll">
+        <table class="model-table forecast-table">
+          <thead id="forecast-table-head"></thead>
+          <tbody id="forecast-table-body"></tbody>
+        </table>
+      </div>
+      <div class="table-notes">
+        The band comes from how far the <em>total</em> forecast was off at each horizon on the
+        holdout. It reflects normal weeks better than holidays and should be read as a guide,
+        not a guarantee. Holiday flags for future weeks follow the calendar used in the data.
+      </div>
+    </div>
+  </section>
+
   <!-- ── AI Assistant ───────────────────────────────────────────────────── -->
   <section class="dash-section" id="ai-assistant-section">
     <div class="section-label">AI Assistant &mdash; Conversational Analysis</div>
