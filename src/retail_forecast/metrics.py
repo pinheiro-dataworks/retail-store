@@ -83,3 +83,9 @@ def evaluate(y_true, y_pred, is_holiday) -> dict[str, float]:
         "bias": bias(y_true, y_pred),
         "r2": r2(y_true, y_pred),
     }
+
+
+def interval_coverage(y_true, lower, upper) -> float:
+    """Share of actuals that fall inside [lower, upper]."""
+    y, lo, hi = _arrays(y_true, lower, upper)
+    return float(np.mean((y >= lo) & (y <= hi)))
