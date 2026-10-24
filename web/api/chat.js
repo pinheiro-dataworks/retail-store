@@ -1,5 +1,5 @@
 /**
- * Retil Store — Groq AI Chat Serverless Function
+ * Retail Store — Groq AI Chat Serverless Function
  * Vercel Edge Function: /api/chat
  *
  * RAG approach: loads rag_context.json at runtime and injects it as a
@@ -27,11 +27,11 @@ function loadRagContext() {
 
 function buildSystemPrompt(ctx) {
   if (!ctx) {
-    return `You are a helpful data analyst assistant for the Retil Store Sales Forecasting Dashboard.
+    return `You are a helpful data analyst assistant for the Retail Store Sales Forecasting Dashboard.
 Answer questions about retail store sales data clearly and concisely.`;
   }
 
-  return `You are an expert data analyst assistant for the **Retil Store Sales Forecasting Dashboard**.
+  return `You are an expert data analyst assistant for the **Retail Store Sales Forecasting Dashboard**.
 You have access to the following accurate dataset context. Use it to give precise, data-driven answers.
 
 ---

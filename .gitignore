@@ -1,12 +1,33 @@
-# Ignore everything at the root level
-*
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
 
-# Keep this file
-!.gitignore
+# Raw data is downloaded with scripts/download_data.py, never committed
+data/raw/*.csv
+data_kaggle/
 
-# Keep README
-!README.md
+# Training outputs that are rebuilt on every run
+artifacts/
 
-# Keep only the deployment folder
-!retil_store/
-!retil_store/**
+# Node / Vercel
+node_modules/
+.vercel/
+.env
+.env.*
+
+# Local scratch files, screenshots and editor settings
+/verify_*.png
+/img/
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

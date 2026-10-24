@@ -1,5 +1,5 @@
 """
-Retil Store — Data Generation Pipeline
+Retail Store — Data Generation Pipeline
 Processes raw Kaggle CSVs → dashboard_data.json + rag_context.json
 Run once before deployment: python generate_data.py
 """
@@ -296,7 +296,7 @@ print(f"Saved: {out_path}")
 # ── RAG Context ───────────────────────────────────────────────────────────────
 rag = {
     "dataset_summary": (
-        "Retil Store Sales Forecasting Dashboard — based on the Walmart Recruiting Store Sales Forecasting "
+        "Retail Store Sales Forecasting Dashboard — based on the Walmart Recruiting Store Sales Forecasting "
         "dataset adapted by Noopur Bhatt. The dataset covers 50 Walmart retail stores across 4 US regions "
         "(East, North, South, West) with store types A, B, and C. "
         f"Period: {dashboard_data['meta']['date_range']}. "
