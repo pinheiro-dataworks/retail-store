@@ -53,6 +53,17 @@ test('server key is used and the visitor key is ignored', async () => {
   assert.equal(calls[0].init.body.messages[1].content, 'Hi');
 });
 
+test('uses gpt-oss-120b by default and GROQ_MODEL when set', async () => {
+  for (const [env, expected] of [[{ GROQ_API_KEY: 'gsk_x' }, 'openai/gpt-oss-120b'],
+                                 [{ GROQ_API_KEY: 'gsk_x', GROQ_MODEL: 'other/model' }, 'other/model']]) {
+    const { fetchImpl, calls } = groqOk();
+    await createHandler({ env, fetchImpl, limiter: allowAll })(
+      mockReq({ body: { message: 'Hi' } }), mockRes());
+    assert.equal(calls[0].init.body.model, expected);
+    assert.equal(calls[0].init.body.include_reasoning, false);
+  }
+});
+
 test('falls back to the visitor key when no server key is set', async () => {
   const { fetchImpl, calls } = groqOk();
   const res = mockRes();

@@ -142,7 +142,7 @@ the [model card](docs/MODEL_CARD.md).
 
 ## LLM assistant
 
-The chat runs on Groq (`llama-3.3-70b-versatile`) and uses **grounded
+The chat runs on Groq (`openai/gpt-oss-120b`) and uses **grounded
 prompting**: the pipeline writes a small JSON of precomputed facts, and the
 whole file goes into the system prompt. There is no retrieval step and no
 vector store, because the facts fit easily in a single prompt. The model is
@@ -152,7 +152,7 @@ told to decline questions the facts cannot answer.
   falls back to asking the visitor for their own key.
 - **Abuse protection:** per-IP rate limit (Upstash Redis or in-memory),
   1,000-character message cap and a CORS allowlist.
-- **Tests:** 12 `node:test` tests cover the endpoint.
+- **Tests:** 13 `node:test` tests cover the endpoint.
 - **Evaluation:** [`eval/assistant_questions.json`](eval/assistant_questions.json)
   has 13 factual questions and 2 that the assistant should decline.
   `scripts/eval_assistant.py` scores a running deployment against them.

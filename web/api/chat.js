@@ -12,6 +12,7 @@
  *
  * Environment:
  *   GROQ_API_KEY              shared key (optional)
+ *   GROQ_MODEL                model id (default openai/gpt-oss-120b)
  *   ALLOWED_ORIGINS           extra origins allowed to call the API, comma separated
  *   RATE_LIMIT_PER_MINUTE     requests per IP per minute (default 10)
  *   UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN   shared rate-limit store (optional)
@@ -32,7 +33,9 @@ try {
 }
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
+// llama-3.3-70b-versatile was retired by Groq on 2026-08-16; gpt-oss-120b is
+// the replacement they recommend. GROQ_MODEL allows switching without a deploy.
+const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
 function createHandler({ env = process.env, fetchImpl = fetch, limiter = createLimiter(env),
                          context = defaultContext } = {}) {
@@ -77,13 +80,17 @@ function createHandler({ env = process.env, fetchImpl = fetch, limiter = createL
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
-          model: MODEL,
+          model: env.GROQ_MODEL || DEFAULT_MODEL,
           messages: [
             { role: 'system', content: buildSystemPrompt(context) },
             { role: 'user',   content: msg.text },
           ],
           temperature: 0.2,
-          max_tokens:  600,
+          // gpt-oss reasons before answering; those tokens share this budget,
+          // so keep the effort low and leave headroom for the reply itself.
+          reasoning_effort:      'low',
+          include_reasoning:     false,
+          max_completion_tokens: 1200,
         }),
       });
 
