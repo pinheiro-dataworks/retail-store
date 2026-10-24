@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- **Assistant model.** Groq retired `llama-3.3-70b-versatile` on 2026-08-16,
+  so every chat request failed. The endpoint now uses `openai/gpt-oss-120b`
+  with low reasoning effort, and the model id can be changed with the
+  `GROQ_MODEL` variable.
+
 ## [2.0.0] - 2026-10-24
 
 This release rebuilds the forecasting methodology, moves the code into a
