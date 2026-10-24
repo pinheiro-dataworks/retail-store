@@ -27,6 +27,7 @@ train-quick:
 
 test:
 	$(PYTHON) -m pytest
+	cd web && npm test --silent
 
 lint:
 	ruff check src tests scripts

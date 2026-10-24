@@ -4,9 +4,10 @@
   "description": "Retail Store Sales Forecasting Dashboard — interactive analytics powered by Python ML and Groq AI",
   "private": true,
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
+    "test": "node --test tests/chat.test.js",
     "generate-data": "cd .. && make train",
     "dev": "vercel dev",
     "deploy": "vercel --prod"
