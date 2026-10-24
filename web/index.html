@@ -289,89 +289,53 @@
     </div>
   </section>
 
-  <!-- ── ML Models ─────────────────────────────────────────────────────── -->
-  <section class="dash-section">
-    <div class="section-label">Machine Learning &mdash; Predictive Models</div>
+  <!-- ── Model Evaluation ──────────────────────────────────────────────── -->
+  <section class="dash-section" id="evaluation-section">
+    <div class="section-label">Model Evaluation &mdash; Time-Based Holdout</div>
 
-    <div class="ml-cards-grid">
-
-      <!-- Random Forest -->
-      <div class="ml-card">
-        <div class="ml-card-header">
-          <div>
-            <div class="ml-card-model">Random Forest</div>
-            <div class="ml-card-sub">Ensemble of decision trees with bagging</div>
-          </div>
-          <div class="r2-badge teal" id="rf-r2-badge">R² —</div>
-        </div>
-        <div class="ml-metrics-row">
-          <div class="ml-metric">
-            <div class="ml-metric-label">MAE</div>
-            <div class="ml-metric-value" id="rf-mae">—</div>
-          </div>
-          <div class="ml-metric">
-            <div class="ml-metric-label">R²</div>
-            <div class="ml-metric-value" id="rf-r2">—</div>
-          </div>
-          <div class="ml-metric">
-            <div class="ml-metric-label">RMSE</div>
-            <div class="ml-metric-value" id="rf-rmse">—</div>
-          </div>
-        </div>
-        <div class="ml-insights">
-          <div class="ml-insight-item">&#8226; Store size and store type are the strongest predictors</div>
-          <div class="ml-insight-item">&#8226; The model effectively captures structural patterns from weekly data</div>
-          <div class="ml-insight-item">&#8226; Bootstrap aggregation reduces individual tree variance</div>
-        </div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-top-bar teal"></div>
+        <div class="kpi-value" id="eval-wmae">—</div>
+        <div class="kpi-title">LightGBM WMAE</div>
+        <div class="kpi-sub">Holiday weeks weighted 5&times;</div>
       </div>
-
-      <!-- Gradient Boosting -->
-      <div class="ml-card">
-        <div class="ml-card-header">
-          <div>
-            <div class="ml-card-model">Gradient Boosting</div>
-            <div class="ml-card-sub">Sequential tree boosting with residual correction</div>
-          </div>
-          <div class="r2-badge gold" id="gb-r2-badge">R² —</div>
-        </div>
-        <div class="ml-metrics-row">
-          <div class="ml-metric">
-            <div class="ml-metric-label">MAE</div>
-            <div class="ml-metric-value" id="gb-mae">—</div>
-          </div>
-          <div class="ml-metric">
-            <div class="ml-metric-label">R²</div>
-            <div class="ml-metric-value" id="gb-r2">—</div>
-          </div>
-          <div class="ml-metric">
-            <div class="ml-metric-label">RMSE</div>
-            <div class="ml-metric-value" id="gb-rmse">—</div>
-          </div>
-        </div>
-        <div class="ml-insights">
-          <div class="ml-insight-item">&#8226; GB outperforms RF with better residual correction capability</div>
-          <div class="ml-insight-item">&#8226; MAE lower than RF: tighter prediction on typical weeks</div>
-          <div class="ml-insight-item">&#8226; Boosted trees learn holiday patterns more precisely</div>
-        </div>
+      <div class="kpi-card">
+        <div class="kpi-top-bar gold"></div>
+        <div class="kpi-value positive" id="eval-skill">—</div>
+        <div class="kpi-title">Skill vs Seasonal Naive</div>
+        <div class="kpi-sub">1 &minus; WMAE<sub>model</sub> / WMAE<sub>naive</sub></div>
       </div>
-
+      <div class="kpi-card">
+        <div class="kpi-top-bar purple"></div>
+        <div class="kpi-value" id="eval-wape">—</div>
+        <div class="kpi-title">WAPE</div>
+        <div class="kpi-sub" id="eval-bias-sub">Bias —</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top-bar cyan"></div>
+        <div class="kpi-value" id="eval-coverage">—</div>
+        <div class="kpi-title">80% Interval Coverage</div>
+        <div class="kpi-sub">Share of actuals inside the band</div>
+      </div>
     </div>
 
-    <!-- Actual vs Predicted Scatter -->
-    <div class="chart-card" style="margin-top: 20px;">
+    <div class="chart-card">
       <div class="chart-card-header">
         <div>
-          <div class="chart-title">Actual vs Predicted &mdash; Random Forest (test set, 200 samples)</div>
-          <div class="chart-sub">Predicted weekly sales vs ground truth &mdash; tighter cluster = better model fit</div>
-        </div>
-        <div class="legend-row">
-          <span class="dot gold"></span><span>Actual vs Pred RF</span>
-          <span class="dot teal"></span><span>Perfect Fit</span>
+          <div class="chart-title">Model Comparison vs Baselines</div>
+          <div class="chart-sub" id="eval-protocol">One-week-ahead forecasts scored on a holdout the models never saw</div>
         </div>
       </div>
-      <div class="chart-wrap tall">
-        <canvas id="chart-actual-vs-pred"></canvas>
+      <div class="table-scroll">
+        <table class="model-table">
+          <thead>
+            <tr><th>Model</th><th>WMAE</th><th>WAPE</th><th>Bias</th><th>MAE</th><th>RMSE</th><th>Skill vs naive</th></tr>
+          </thead>
+          <tbody id="model-table-body"></tbody>
+        </table>
       </div>
+      <div class="table-notes" id="model-table-notes"></div>
     </div>
 
   </section>

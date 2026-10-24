@@ -115,8 +115,7 @@ function renderAll(data) {
   renderPearsonCorr(data.pearson_correlation);
   renderMarkdownCorr(data.markdown_correlation);
   renderTopDepts(data.top_departments);
-  renderMLModels(data.ml_models);
-  renderActualVsPred(data.actual_vs_predicted);
+  renderEvaluation(data.evaluation);
 }
 
 /* ── Update charts driven by filters ───────────────────────────────────── */
@@ -598,76 +597,45 @@ function renderTopDepts(depts) {
   });
 }
 
-/* ════════════════════════════ ML METRICS ══════════════════════════════════ */
-function renderMLModels(ml) {
-  const rf = ml.random_forest;
-  const gb = ml.gradient_boosting;
+/* ═══════════════════════════ MODEL EVALUATION ═════════════════════════════ */
+const pct = (v, digits = 1, signed = false) =>
+  `${signed && v > 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`;
 
-  document.getElementById('rf-r2-badge').textContent  = `R² ${rf.r2.toFixed(3)}`;
-  document.getElementById('rf-r2').textContent        = rf.r2.toFixed(3);
-  document.getElementById('rf-mae').textContent       = fmtShort(rf.mae);
-  document.getElementById('rf-rmse').textContent      = fmtShort(rf.rmse);
+function renderEvaluation(ev) {
+  const best  = ev.models.find(m => m.model === 'LightGBM + lags');
+  const naive = ev.models.find(m => m.model.startsWith('Seasonal naive'));
+  const h     = ev.holdout;
 
-  document.getElementById('gb-r2-badge').textContent  = `R² ${gb.r2.toFixed(3)}`;
-  document.getElementById('gb-r2').textContent        = gb.r2.toFixed(3);
-  document.getElementById('gb-mae').textContent       = fmtShort(gb.mae);
-  document.getElementById('gb-rmse').textContent      = fmtShort(gb.rmse);
-}
+  document.getElementById('eval-wmae').textContent     = fmtShort(best.wmae);
+  document.getElementById('eval-skill').textContent    = pct(best.skill_vs_naive, 1, true);
+  document.getElementById('eval-wape').textContent     = pct(best.wape);
+  document.getElementById('eval-bias-sub').textContent = `Bias ${pct(best.bias, 1, true)} (+ = over-forecast)`;
+  document.getElementById('eval-coverage').textContent = pct(ev.interval.coverage);
+  document.getElementById('eval-protocol').textContent =
+    `One-week-ahead forecasts · trained on data before ${h.test_start}, ` +
+    `scored on ${h.test_start} → ${h.test_end} (${h.test_rows.toLocaleString('en-US')} store-dept-weeks)`;
 
-/* ════════════════════════ ACTUAL VS PREDICTED ═════════════════════════════ */
-function renderActualVsPred(avp) {
-  const ctx = document.getElementById('chart-actual-vs-pred').getContext('2d');
+  const bestWmae = Math.min(...ev.models.map(m => m.wmae));
+  document.getElementById('model-table-body').innerHTML = ev.models.map(m => {
+    const cls = m.kind === 'baseline' ? 'baseline' : (m.wmae === bestWmae ? 'best' : '');
+    const skillCls = m.skill_vs_naive < 0 ? 'skill-neg' : '';
+    return `<tr class="${cls}">
+      <td>${m.model}${m.kind === 'baseline' ? '<span class="kind-tag">baseline</span>' : ''}</td>
+      <td>${fmtShort(m.wmae)}</td>
+      <td>${pct(m.wape)}</td>
+      <td>${pct(m.bias, 1, true)}</td>
+      <td>${fmtShort(m.mae)}</td>
+      <td>${fmtShort(m.rmse)}</td>
+      <td class="${skillCls}">${pct(m.skill_vs_naive, 1, true)}</td>
+    </tr>`;
+  }).join('');
 
-  const scatter = avp.actual.map((a, i) => ({ x: a, y: avp.predicted_rf[i] }));
-  const maxVal  = Math.max(...avp.actual, ...avp.predicted_rf);
-  const perfect = [{ x: 0, y: 0 }, { x: maxVal, y: maxVal }];
-
-  charts.actualVsPred = new Chart(ctx, {
-    type: 'scatter',
-    data: {
-      datasets: [
-        {
-          label: 'Actual vs Predicted',
-          data: scatter,
-          backgroundColor: alpha(C.gold, 0.55),
-          borderColor: C.gold,
-          borderWidth: 1,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: 'Perfect Fit',
-          data: perfect,
-          type: 'line',
-          borderColor: C.teal,
-          borderWidth: 2,
-          borderDash: [6, 4],
-          pointRadius: 0,
-          fill: false,
-          tension: 0,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
-          callbacks: {
-            label: ctx => ctx.dataset.label === 'Perfect Fit'
-              ? 'Perfect Fit Line'
-              : `Actual: ${fmtShort(ctx.parsed.x)}  Pred: ${fmtShort(ctx.parsed.y)}`,
-          },
-        },
-      },
-      scales: {
-        x: { grid: BASE_GRID, title: { display: true, text: 'Actual Weekly Sales ($)', color: C.text3 }, ticks: { callback: v => fmtShort(v) } },
-        y: { grid: BASE_GRID, title: { display: true, text: 'Predicted Weekly Sales ($)', color: C.text3 }, ticks: { callback: v => fmtShort(v) } },
-      },
-    },
-  });
+  document.getElementById('model-table-notes').innerHTML =
+    `WMAE weights holiday weeks 5&times;, as in the original Kaggle competition. ` +
+    `Skill is measured against the seasonal naive forecast (same week last year, ${fmtShort(naive.wmae)} WMAE). ` +
+    `Adding temperature, fuel price, CPI, unemployment and markdowns back changes WMAE from ` +
+    `${fmt(ev.ablation.without_exogenous_wmae)} to ${fmt(ev.ablation.with_exogenous_wmae)}, ` +
+    `so they are left out of the model.`;
 }
 
 /* ══════════════════════════════ FILTER PANEL ══════════════════════════════ */
