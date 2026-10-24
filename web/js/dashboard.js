@@ -956,6 +956,22 @@ function scrollToChat() {
 /* ══════════════════════════════ GROQ AI CHAT ══════════════════════════════ */
 let groqApiKey = '';
 
+/* If the deployment has a server-side key, skip the key prompt entirely. */
+async function detectServerKey() {
+  try {
+    const res = await fetch('/api/chat', { method: 'GET' });
+    if (!res.ok) return;
+    const { serverKey } = await res.json();
+    if (serverKey) {
+      document.getElementById('api-key-section').classList.add('hidden');
+      document.getElementById('chat-interface').classList.remove('hidden');
+    }
+  } catch {
+    // Static preview without the serverless function: keep the key prompt.
+  }
+}
+document.addEventListener('DOMContentLoaded', detectServerKey);
+
 function activateChat() {
   const key = document.getElementById('groq-api-key').value.trim();
   if (!key || !key.startsWith('gsk_')) {
@@ -981,7 +997,7 @@ async function sendChat() {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: msg, apiKey: groqApiKey }),
+      body: JSON.stringify(groqApiKey ? { message: msg, apiKey: groqApiKey } : { message: msg }),
     });
 
     if (!res.ok) {

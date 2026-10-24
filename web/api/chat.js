@@ -1,6 +1,11 @@
 /**
  * Retail Store — assistant endpoint (Vercel Node.js serverless function).
+ * GET  /api/chat                       ->  { serverKey: boolean }
  * POST /api/chat  { message, apiKey? }  ->  { reply }
+ *
+ * The Groq key normally lives in the GROQ_API_KEY environment variable, so
+ * visitors can use the chat without one. If it is not set, the endpoint falls
+ * back to a key supplied by the visitor (bring-your-own-key).
  *
  * The assistant is grounded on precomputed facts (see _lib/prompt.js); there is
  * no retrieval step.
@@ -23,18 +28,22 @@ const MODEL = 'llama-3.3-70b-versatile';
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+  const serverKey = process.env.GROQ_API_KEY || '';
+
   if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'GET') return res.status(200).json({ serverKey: Boolean(serverKey) });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { message, apiKey } = req.body || {};
+  const { message, apiKey: userKey } = req.body || {};
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid message' });
   }
-  if (!apiKey || !apiKey.startsWith('gsk_')) {
+  const apiKey = serverKey || userKey;
+  if (!apiKey || typeof apiKey !== 'string' || !apiKey.startsWith('gsk_')) {
     return res.status(400).json({ error: 'Missing or invalid Groq API key' });
   }
 
