@@ -116,6 +116,8 @@ function renderAll(data) {
   renderMarkdownCorr(data.markdown_correlation);
   renderTopDepts(data.top_departments);
   renderEvaluation(data.evaluation);
+  renderHoldoutSeries(data.evaluation.weekly);
+  renderWeeklyError(data.evaluation.weekly);
 }
 
 /* ── Update charts driven by filters ───────────────────────────────────── */
@@ -636,6 +638,98 @@ function renderEvaluation(ev) {
     `Adding temperature, fuel price, CPI, unemployment and markdowns back changes WMAE from ` +
     `${fmt(ev.ablation.without_exogenous_wmae)} to ${fmt(ev.ablation.with_exogenous_wmae)}, ` +
     `so they are left out of the model.`;
+}
+
+/* Shades holiday weeks behind a category-axis chart. */
+const holidayShading = (flags) => ({
+  id: 'holidayShading',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales: { x } } = chart;
+    const half = (x.getPixelForValue(1) - x.getPixelForValue(0)) / 2;
+    ctx.save();
+    ctx.fillStyle = alpha(C.red, 0.10);
+    flags.forEach((f, i) => {
+      if (!f) return;
+      const cx = x.getPixelForValue(i);
+      ctx.fillRect(cx - half, chartArea.top, half * 2, chartArea.bottom - chartArea.top);
+    });
+    ctx.restore();
+  },
+});
+
+const weekLabel = (w, i) => (w.holiday[i] ? `${w.dates[i]} · ${w.holiday[i]}` : w.dates[i]);
+
+function renderHoldoutSeries(w) {
+  const ctx = document.getElementById('chart-holdout-series').getContext('2d');
+  const line = (label, data, color, extra = {}) => ({
+    label, data, borderColor: color, backgroundColor: color,
+    borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.25, ...extra,
+  });
+  charts.holdoutSeries = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: w.dates,
+      datasets: [
+        line('Actual', w.actual, C.text, { borderWidth: 2.5 }),
+        line('LightGBM', w.lightgbm, C.teal),
+        line('Seasonal naive', w.seasonal_naive, C.gold, { borderDash: [5, 4], borderWidth: 1.5 }),
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        callbacks: {
+          title: items => weekLabel(w, items[0].dataIndex),
+          label: c => `${c.dataset.label}: ${fmtShort(c.parsed.y)}`,
+        },
+      }},
+      scales: {
+        x: { grid: BASE_GRID, ticks: { maxTicksLimit: 10, maxRotation: 0 } },
+        y: { grid: BASE_GRID, ticks: { callback: v => fmtShort(v) } },
+      },
+    },
+    plugins: [holidayShading(w.is_holiday)],
+  });
+}
+
+function renderWeeklyError(w) {
+  const ctx = document.getElementById('chart-weekly-error').getContext('2d');
+  charts.weeklyError = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: w.dates,
+      datasets: [
+        {
+          label: 'LightGBM', data: w.mae_lightgbm,
+          backgroundColor: w.is_holiday.map(h => alpha(h ? C.red : C.teal, 0.8)),
+          borderRadius: 3, borderSkipped: false,
+        },
+        {
+          label: 'Seasonal naive', data: w.mae_seasonal_naive, type: 'line',
+          borderColor: C.gold, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, tension: 0.25,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        callbacks: {
+          title: items => weekLabel(w, items[0].dataIndex),
+          label: c => `${c.dataset.label} MAE: ${fmtShort(c.parsed.y)}`,
+        },
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 10, maxRotation: 0 } },
+        y: { grid: BASE_GRID, ticks: { callback: v => fmtShort(v) } },
+      },
+    },
+  });
 }
 
 /* ══════════════════════════════ FILTER PANEL ══════════════════════════════ */

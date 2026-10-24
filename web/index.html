@@ -338,6 +338,40 @@
       <div class="table-notes" id="model-table-notes"></div>
     </div>
 
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Actual vs Forecast &mdash; Holdout Weeks</div>
+          <div class="chart-sub">Total weekly sales across all stores; shaded weeks are holidays</div>
+        </div>
+        <div class="legend-row">
+          <span class="dot text"></span><span>Actual</span>
+          <span class="dot teal"></span><span>LightGBM</span>
+          <span class="dot gold"></span><span>Seasonal naive</span>
+        </div>
+      </div>
+      <div class="chart-wrap tall">
+        <canvas id="chart-holdout-series"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Error by Week</div>
+          <div class="chart-sub">Mean absolute error per store-department in each holdout week &mdash; holiday weeks highlighted</div>
+        </div>
+        <div class="legend-row">
+          <span class="dot teal"></span><span>LightGBM</span>
+          <span class="dot gold"></span><span>Seasonal naive</span>
+          <span class="dot red"></span><span>Holiday week</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chart-weekly-error"></canvas>
+      </div>
+    </div>
+
   </section>
 
   <!-- ── AI Assistant ───────────────────────────────────────────────────── -->
