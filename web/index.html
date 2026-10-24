@@ -372,6 +372,36 @@
       </div>
     </div>
 
+    <div class="two-col-grid">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-title">Residual Distribution &mdash; LightGBM</div>
+            <div class="chart-sub">Actual &minus; forecast per store-department-week (positive = under-forecast); outer bins hold the 0.5% tails</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-residuals"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-title">Error by Forecast Horizon</div>
+            <div class="chart-sub">One model per horizon (direct strategy), same holdout weeks</div>
+          </div>
+          <div class="legend-row">
+            <span class="dot teal"></span><span>LightGBM</span>
+            <span class="dot gold"></span><span>Seasonal naive</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-horizons"></canvas>
+        </div>
+      </div>
+    </div>
+
   </section>
 
   <!-- ── AI Assistant ───────────────────────────────────────────────────── -->

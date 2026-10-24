@@ -45,9 +45,11 @@ const fmt = (v, decimals = 0) => new Intl.NumberFormat('en-US', {
 }).format(v);
 
 const fmtShort = (v) => {
-  if (Math.abs(v) >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
-  if (Math.abs(v) >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
-  if (Math.abs(v) >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+  const sign = v < 0 ? '-' : '';
+  const a = Math.abs(v);
+  if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(2)}B`;
+  if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(1)}M`;
+  if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(1)}K`;
   return fmt(v);
 };
 
@@ -118,6 +120,8 @@ function renderAll(data) {
   renderEvaluation(data.evaluation);
   renderHoldoutSeries(data.evaluation.weekly);
   renderWeeklyError(data.evaluation.weekly);
+  renderResiduals(data.evaluation.residuals);
+  renderHorizons(data.evaluation.horizons);
 }
 
 /* ── Update charts driven by filters ───────────────────────────────────── */
@@ -727,6 +731,77 @@ function renderWeeklyError(w) {
       scales: {
         x: { grid: { display: false }, ticks: { maxTicksLimit: 10, maxRotation: 0 } },
         y: { grid: BASE_GRID, ticks: { callback: v => fmtShort(v) } },
+      },
+    },
+  });
+}
+
+function renderResiduals(r) {
+  const ctx = document.getElementById('chart-residuals').getContext('2d');
+  const mids = r.bin_start.map((s, i) => (s + r.bin_end[i]) / 2);
+  charts.residuals = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: mids.map(m => fmtShort(m)),
+      datasets: [{
+        data: r.count,
+        backgroundColor: mids.map(m => alpha(m < 0 ? C.gold : C.teal, 0.75)),
+        borderRadius: 2, barPercentage: 1, categoryPercentage: 0.95,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        callbacks: {
+          title: items => {
+            const i = items[0].dataIndex;
+            return `${fmtShort(r.bin_start[i])} to ${fmtShort(r.bin_end[i])}`;
+          },
+          label: c => `${c.parsed.y.toLocaleString('en-US')} store-dept-weeks`,
+        },
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0 } },
+        y: { grid: BASE_GRID, ticks: { callback: v => v.toLocaleString('en-US') } },
+      },
+    },
+  });
+}
+
+function renderHorizons(hz) {
+  const ctx = document.getElementById('chart-horizons').getContext('2d');
+  charts.horizons = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: hz.map(h => `${h.horizon}w`),
+      datasets: [
+        {
+          label: 'LightGBM', data: hz.map(h => h.wmae),
+          borderColor: C.teal, backgroundColor: C.teal, borderWidth: 2, pointRadius: 4,
+        },
+        {
+          label: 'Seasonal naive', data: hz.map(h => h.naive_wmae),
+          borderColor: C.gold, borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        callbacks: {
+          title: items => `${hz[items[0].dataIndex].horizon}-week-ahead`,
+          label: c => `${c.dataset.label} WMAE: ${fmtShort(c.parsed.y)}`,
+          afterBody: items => `Skill vs naive: ${pct(hz[items[0].dataIndex].skill_vs_naive, 1, true)}`,
+        },
+      }},
+      scales: {
+        x: { grid: BASE_GRID, title: { display: true, text: 'Weeks ahead', color: C.text3 } },
+        y: { grid: BASE_GRID, beginAtZero: true, ticks: { callback: v => fmtShort(v) } },
       },
     },
   });
