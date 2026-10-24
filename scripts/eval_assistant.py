@@ -34,8 +34,22 @@ def ask(url: str, question: str, api_key: str | None, timeout: float = 60) -> st
         return json.loads(resp.read())["reply"]
 
 
+# Some models write typographic characters (narrow no-break spaces, non-breaking
+# hyphens, curly apostrophes) that the ASCII accept patterns would miss.
+_TYPOGRAPHY = str.maketrans({
+    " ": " ", " ": " ", " ": " ",
+    "‐": "-", "‑": "-", "‒": "-", "–": "-", "—": "-",
+    "‘": "'", "’": "'", "“": '"', "”": '"',
+})
+
+
+def normalize(reply: str) -> str:
+    return reply.translate(_TYPOGRAPHY)
+
+
 def passes(item: dict, reply: str) -> bool:
-    return any(re.search(p, reply, flags=re.IGNORECASE) for p in item["accept"])
+    text = normalize(reply)
+    return any(re.search(p, text, flags=re.IGNORECASE) for p in item["accept"])
 
 
 def main() -> int:
