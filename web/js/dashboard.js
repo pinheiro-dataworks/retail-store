@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Retil Store — Dashboard JavaScript
+   Retail Store — Dashboard JavaScript
    Chart.js 4.x · Dark theme · Filter-driven interactivity · Groq AI chat
    ═════════════════════════════════════════════════════════════════════════ */
 

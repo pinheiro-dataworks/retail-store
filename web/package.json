@@ -1,7 +1,7 @@
 {
-  "name": "retil-store-dashboard",
+  "name": "retail-store-dashboard",
   "version": "1.0.0",
-  "description": "Retil Store Sales Forecasting Dashboard — interactive analytics powered by Python ML and Groq AI",
+  "description": "Retail Store Sales Forecasting Dashboard — interactive analytics powered by Python ML and Groq AI",
   "private": true,
   "engines": {
     "node": ">=18"

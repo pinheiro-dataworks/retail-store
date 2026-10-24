@@ -1,5 +1,5 @@
 {
-  "dataset_summary": "Retil Store Sales Forecasting Dashboard \u2014 based on the Walmart Recruiting Store Sales Forecasting dataset adapted by Noopur Bhatt. The dataset covers 50 Walmart retail stores across 4 US regions (East, North, South, West) with store types A, B, and C. Period: 2022-01-01 to 2024-12-21. Total revenue: $8.81B across 156,000 weekly sales records spanning 20 departments.",
+  "dataset_summary": "Retail Store Sales Forecasting Dashboard \u2014 based on the Walmart Recruiting Store Sales Forecasting dataset adapted by Noopur Bhatt. The dataset covers 50 Walmart retail stores across 4 US regions (East, North, South, West) with store types A, B, and C. Period: 2022-01-01 to 2024-12-21. Total revenue: $8.81B across 156,000 weekly sales records spanning 20 departments.",
   "kpis": {
     "total_sales": "$8.81B",
     "avg_weekly_sales": "$56.5K per store-department",

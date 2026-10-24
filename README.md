@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="retil_store/img/logo.png" alt="Retil Store" width="220"/>
+  <img src="web/img/logo.png" alt="Retail Store" width="320"/>
 </p>
 
-# Retil Store — Sales Forecasting Dashboard
+# Retail Store — Sales Forecasting Dashboard
 
 An interactive sales forecasting dashboard built on real retail data, combining exploratory analysis, machine learning models, and a conversational AI assistant powered by Groq.
 
-**Live demo:** [retil-store.vercel.app](https://retil-store.vercel.app)
+**Live demo:** [retail-store.vercel.app](https://retail-store.vercel.app)
 
 ---
 
@@ -62,7 +62,7 @@ Turn raw weekly sales data from 50 retail stores into a fully interactive analyt
 ## Project Structure
 
 ```
-retil_store/
+web/
 ├── index.html              ← Dashboard entry point
 ├── vercel.json             ← Vercel routing config
 ├── package.json
@@ -85,7 +85,7 @@ retil_store/
 
 ```bash
 pip install pandas numpy scikit-learn
-cd retil_store
+cd web
 python generate_data.py
 ```
 
@@ -117,4 +117,4 @@ Data Scientist
 
 ---
 
-*Retil Store Dashboard — Version 1.0.0 · © 2026*
+*Retail Store Dashboard — Version 1.0.0 · © 2026*

@@ -24,8 +24,8 @@ node_modules/
 .env.*
 
 # Local scratch files, screenshots and editor settings
-verify_*.png
-img/
+/verify_*.png
+/img/
 .claude/
 .vscode/
 .idea/
