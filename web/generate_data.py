@@ -7,23 +7,23 @@ Run once before deployment: python generate_data.py
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error
 from sklearn.preprocessing import LabelEncoder
 import json
-import warnings
 import os
+import sys
 
-warnings.filterwarnings("ignore")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from retail_forecast.config import RAW_DIR  # noqa: E402
+from retail_forecast.validation import temporal_split  # noqa: E402
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data_kaggle")
 OUT_DIR  = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 print("Loading data …")
-sales    = pd.read_csv(os.path.join(DATA_DIR, "sales.csv"))
-stores   = pd.read_csv(os.path.join(DATA_DIR, "stores.csv"))
-features = pd.read_csv(os.path.join(DATA_DIR, "features.csv"))
+sales    = pd.read_csv(RAW_DIR / "sales.csv")
+stores   = pd.read_csv(RAW_DIR / "stores.csv")
+features = pd.read_csv(RAW_DIR / "features.csv")
 
 sales["date"]    = pd.to_datetime(sales["date"])
 features["date"] = pd.to_datetime(features["date"])
@@ -135,10 +135,12 @@ FEATURES = ["store_size", "type_enc", "region_enc", "season_enc",
             "unemployment", "week_of_year", "month_num",
             "markdown_1", "markdown_2", "markdown_3", "markdown_4", "markdown_5"]
 
-X = ml_df[FEATURES].fillna(0)
-y = ml_df["weekly_sales"]
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Time-based holdout: fit on 2022-2023, score on H2 2024. The previous random
+# 80/20 split trained on weeks that came after the ones being scored.
+split = temporal_split(ml_df)
+train_df = pd.concat([split.train, split.valid])
+X_train, y_train = train_df[FEATURES].fillna(0), train_df["weekly_sales"]
+X_test, y_test = split.test[FEATURES].fillna(0), split.test["weekly_sales"]
 
 # Random Forest
 rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
