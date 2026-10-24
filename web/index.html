@@ -481,7 +481,7 @@
           </div>
         </div>
         <div class="chat-input-row">
-          <input type="text" id="chat-input" class="chat-text-input"
+          <input type="text" id="chat-input" class="chat-text-input" maxlength="1000"
                  placeholder="Ask about sales trends, regions, holiday impact…"
                  onkeydown="if(event.key==='Enter') sendChat()" />
           <button class="btn-send" onclick="sendChat()">
