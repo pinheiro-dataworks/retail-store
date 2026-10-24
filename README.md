@@ -6,7 +6,7 @@
 
 An interactive sales forecasting dashboard built on real retail data, combining exploratory analysis, machine learning models, and a conversational AI assistant powered by Groq.
 
-**Live demo:** [retail-store.vercel.app](https://retail-store.vercel.app)
+**Live demo:** [retail-store-eta.vercel.app](https://retail-store-eta.vercel.app)
 
 ---
 
