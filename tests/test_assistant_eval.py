@@ -53,3 +53,30 @@ def test_eval_set_shape():
         assert i["accept"]
         for p in i["accept"]:
             re.compile(p)
+
+
+def _load_scorer():
+    import importlib.util
+
+    path = ROOT / "scripts" / "eval_assistant.py"
+    spec = importlib.util.spec_from_file_location("eval_assistant", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+# Real gpt-oss-120b replies (shortened) that the scorer used to reject.
+TYPOGRAPHIC_REPLIES = [
+    ("biggest_holiday", "The biggest lift comes from **Black Friday** (+103.4%)."),
+    ("protocol", "Testing period: **2024‑07‑01 through 2024‑12‑21**."),
+    ("refuse_store_week", "The dataset does not include store‑department‑date sales, "
+                          "so I cannot give the exact figure."),
+    ("refuse_far_future", "No figures are available for December 2025, so I cannot give "
+                          "an estimate."),
+]
+
+
+@pytest.mark.parametrize(("item_id", "reply"), TYPOGRAPHIC_REPLIES)
+def test_scorer_accepts_typographic_replies(item_id, reply):
+    item = next(i for i in ITEMS if i["id"] == item_id)
+    assert _load_scorer().passes(item, reply)
