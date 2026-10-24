@@ -135,7 +135,9 @@ def dashboard_payload(res: RunResult) -> dict:
         "pearson_correlation": [{"feature": f, "correlation": _r(v, 4)}
                                 for f, v in corr.items() if not f.startswith("markdown")],
         "markdown_correlation": [{"markdown": f.replace("_", " ").title(),
-                                  "correlation": _r(corr[f], 4)} for f in analytics.MARKDOWNS],
+                                  "correlation": _r(r.all_weeks, 4),
+                                  "correlation_non_holiday": _r(r.non_holiday, 4)}
+                                 for f, r in analytics.markdown_correlations(df).iterrows()],
         "top_departments": [{"dept": f"Dept {int(d)}", "revenue": _r(v)}
                             for d, v in analytics.top_departments(df).items()],
         "evaluation": evaluation_block(res),

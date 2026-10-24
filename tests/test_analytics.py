@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 import pytest
 
 from retail_forecast import analytics
@@ -26,3 +28,20 @@ def test_kpis(panel):
 def test_monthly_revenue_sums_to_total(panel):
     m = analytics.monthly_revenue(panel)
     assert m["revenue"].sum() == pytest.approx(panel["weekly_sales"].sum())
+
+
+def test_markdown_correlations_has_both_views():
+    rng = np.random.default_rng(3)
+    n = 2_000
+    holiday = (rng.uniform(size=n) < 0.15).astype(int)
+    df = pd.DataFrame({
+        "is_holiday": holiday,
+        "weekly_sales": 100 + 50 * holiday + rng.normal(0, 10, n),
+        # markdown_1 is larger on holidays but unrelated to sales otherwise
+        **{f"markdown_{k}": rng.uniform(size=n) + (5 * holiday if k == 1 else 0)
+           for k in range(1, 6)},
+    })
+    out = analytics.markdown_correlations(df)
+    assert list(out.columns) == ["all_weeks", "non_holiday"]
+    assert out.loc["markdown_1", "all_weeks"] > 0.5
+    assert abs(out.loc["markdown_1", "non_holiday"]) < 0.1
