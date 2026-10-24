@@ -34,3 +34,15 @@ def test_lgbm_refit_needs_rounds(split):
 def test_random_forest_handles_categoricals_and_nans(split):
     pred = RandomForestForecaster(feature_columns(1)).fit(split.train).predict(split.test)
     assert np.isfinite(pred).all()
+
+
+def test_quantile_interval_is_ordered_and_covers(split):
+    from retail_forecast.metrics import interval_coverage
+    from retail_forecast.models import QuantileInterval
+
+    qi = QuantileInterval(feature_columns(1), n_estimators=50,
+                          params={"num_leaves": 7, "min_child_samples": 5}).fit(split.train)
+    lo, hi = qi.predict(split.test)
+    assert (lo <= hi).all()
+    assert qi.nominal_coverage == 0.8
+    assert 0 <= interval_coverage(split.test["weekly_sales"], lo, hi) <= 1

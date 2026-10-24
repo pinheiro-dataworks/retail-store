@@ -101,3 +101,39 @@ class RandomForestForecaster:
         if self.model is None:
             raise RuntimeError("model is not fitted")
         return self.model.predict(_to_numeric(df, self.features))
+
+
+@dataclass
+class QuantileInterval:
+    """Prediction interval from two LightGBM quantile models.
+
+    Trained without holiday weights: reweighting rows would shift the
+    quantile being estimated.
+    """
+
+    features: list[str]
+    params: dict = field(default_factory=lambda: dict(DEFAULT_LGBM_PARAMS))
+    lower: float = 0.1
+    upper: float = 0.9
+    n_estimators: int = 500
+    models: dict[float, lgb.LGBMRegressor] = field(default_factory=dict)
+
+    def fit(self, train: pd.DataFrame) -> QuantileInterval:
+        train = train.dropna(subset=[TARGET])
+        base = {k: v for k, v in self.params.items() if k != "objective"}
+        for alpha in (self.lower, self.upper):
+            model = lgb.LGBMRegressor(objective="quantile", alpha=alpha,
+                                      n_estimators=self.n_estimators, random_state=SEED,
+                                      verbose=-1, n_jobs=-1, **base)
+            self.models[alpha] = model.fit(train[self.features], train[TARGET])
+        return self
+
+    def predict(self, df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+        lo = self.models[self.lower].predict(df[self.features])
+        hi = self.models[self.upper].predict(df[self.features])
+        # Independent quantile models can cross; sort so lo <= hi always holds.
+        return np.minimum(lo, hi), np.maximum(lo, hi)
+
+    @property
+    def nominal_coverage(self) -> float:
+        return self.upper - self.lower

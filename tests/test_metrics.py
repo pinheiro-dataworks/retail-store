@@ -43,3 +43,7 @@ def test_perfect_forecast():
 def test_shape_mismatch_raises():
     with pytest.raises(ValueError):
         metrics.mae([1, 2], [1])
+
+
+def test_interval_coverage():
+    assert metrics.interval_coverage([1, 5, 10], [0, 6, 9], [2, 7, 11]) == pytest.approx(2 / 3)
