@@ -150,6 +150,7 @@ function updateFilteredCharts(data) {
   document.getElementById('kpi-total-sales').textContent = fmtShort(total);
   document.getElementById('kpi-avg-weekly').textContent  = fmtShort(avg);
   document.getElementById('kpi-holiday-lift').textContent = (holRows.length ? `+${lift.toFixed(1)}%` : 'N/A');
+  document.getElementById('kpi-holiday-lift-sub').textContent = 'Raw, for the filtered data';
 
   // ── Monthly revenue
   const byMonth = {};
@@ -208,6 +209,8 @@ function renderKPIs(kpis) {
   document.getElementById('kpi-total-sales').textContent   = fmtShort(kpis.total_sales);
   document.getElementById('kpi-avg-weekly').textContent    = fmtShort(kpis.avg_weekly_sales);
   document.getElementById('kpi-holiday-lift').textContent  = `+${kpis.holiday_lift_pct.toFixed(1)}%`;
+  document.getElementById('kpi-holiday-lift-sub').textContent =
+    `Raw · +${kpis.holiday_lift_controlled_pct.toFixed(1)}% within the same store-dept`;
   document.getElementById('kpi-max-store').textContent     = fmtShort(kpis.max_store_revenue);
 }
 
@@ -457,6 +460,7 @@ function renderSeasonalRadar(seasonal) {
           grid: { color: 'rgba(37,48,80,0.6)' },
           angleLines: { color: 'rgba(37,48,80,0.6)' },
           pointLabels: { color: C.text2, font: { size: 12, weight: '600' } },
+          beginAtZero: true,
           ticks: { display: false },
         },
       },
@@ -464,10 +468,10 @@ function renderSeasonalRadar(seasonal) {
   });
 }
 
-/* ════════════════════════════ FEATURE IMPORTANCE ══════════════════════════ */
+/* ═══════════════════════ PERMUTATION IMPORTANCE ═══════════════════════════ */
 function renderFeatureImportance(features) {
-  const top12 = features.slice(0, 12);
-  const ctx   = document.getElementById('chart-feat-importance').getContext('2d');
+  const top = features.filter(f => f.wmae_increase > 0).slice(0, 12);
+  const ctx = document.getElementById('chart-feat-importance').getContext('2d');
 
   const gradient = ctx.createLinearGradient(300, 0, 0, 0);
   gradient.addColorStop(0,   C.gold);
@@ -477,9 +481,9 @@ function renderFeatureImportance(features) {
   charts.featImportance = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: top12.map(f => f.feature.replace(/_/g, ' ')),
+      labels: top.map(f => f.feature.replace(/_/g, ' ')),
       datasets: [{
-        data: top12.map(f => (f.importance * 100).toFixed(2)),
+        data: top.map(f => f.wmae_increase),
         backgroundColor: gradient,
         borderRadius: 4,
         borderSkipped: false,
@@ -491,10 +495,14 @@ function renderFeatureImportance(features) {
       indexAxis: 'y',
       plugins: { legend: { display: false }, tooltip: {
         backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
-        callbacks: { label: ctx => `${ctx.parsed.x.toFixed(2)}%` },
+        callbacks: {
+          label: c => `+${fmtShort(c.parsed.x)} WMAE when shuffled ` +
+                      `(${(top[c.dataIndex].importance * 100).toFixed(1)}% of total)`,
+        },
       }},
       scales: {
-        x: { grid: BASE_GRID, ticks: { callback: v => v + '%' } },
+        x: { grid: BASE_GRID, ticks: { callback: v => fmtShort(v) },
+             title: { display: true, text: 'WMAE increase', color: C.text3 } },
         y: { grid: { display: false }, ticks: { font: { size: 10 } } },
       },
     },
@@ -538,27 +546,30 @@ function renderPearsonCorr(pearson) {
 /* ════════════════════════════ MARKDOWN CORR ═══════════════════════════════ */
 function renderMarkdownCorr(markdown) {
   const ctx = document.getElementById('chart-markdown-corr').getContext('2d');
-  const blues = ['#42a5f5','#5c6bc0','#7e57c2','#ec407a','#26c6da'];
 
   charts.markdownCorr = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: markdown.map(m => m.markdown),
-      datasets: [{
-        data: markdown.map(m => m.correlation),
-        backgroundColor: blues.map(c => alpha(c, 0.75)),
-        borderColor: blues,
-        borderWidth: 1.5,
-        borderRadius: 6,
-        borderSkipped: false,
-      }],
+      datasets: [
+        {
+          label: 'All weeks', data: markdown.map(m => m.correlation),
+          backgroundColor: alpha(C.gold, 0.75), borderColor: C.gold, borderWidth: 1.5,
+          borderRadius: 6, borderSkipped: false,
+        },
+        {
+          label: 'Non-holiday weeks', data: markdown.map(m => m.correlation_non_holiday),
+          backgroundColor: alpha(C.teal, 0.75), borderColor: C.teal, borderWidth: 1.5,
+          borderRadius: 6, borderSkipped: false,
+        },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: {
         backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
-        callbacks: { label: ctx => ctx.parsed.y.toFixed(4) },
+        callbacks: { label: c => `${c.dataset.label}: r = ${c.parsed.y.toFixed(4)}` },
       }},
       scales: {
         x: { grid: { display: false } },

@@ -17,7 +17,7 @@
     <img src="img/logo.png" alt="Retail Store" />
   </a>
   <nav class="nav-actions">
-    <button class="nav-btn" id="btn-chat-ia" onclick="scrollToChat()">Chat IA</button>
+    <button class="nav-btn" id="btn-chat-ia" onclick="scrollToChat()">AI Chat</button>
     <button class="nav-btn nav-btn-outline" id="btn-filters" onclick="toggleFilters()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
       Filters
@@ -101,7 +101,7 @@
         <div class="kpi-top-bar gold"></div>
         <div class="kpi-value positive" id="kpi-holiday-lift">—</div>
         <div class="kpi-title">Holiday Sales Lift</div>
-        <div class="kpi-sub">vs Non-Holiday Baseline</div>
+        <div class="kpi-sub" id="kpi-holiday-lift-sub">Raw, vs non-holiday weeks</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top-bar purple"></div>
@@ -183,7 +183,7 @@
         </div>
         <div class="legend-row">
           <span class="dot gold"></span><span>Type A</span>
-          <span class="dot teal"></span><span>Type B</span>
+          <span class="dot cyan"></span><span>Type B</span>
           <span class="dot purple"></span><span>Type C</span>
         </div>
       </div>
@@ -202,7 +202,7 @@
         <div class="chart-card-header">
           <div>
             <div class="chart-title">Holiday Impact on Sales</div>
-            <div class="chart-sub">Average weekly sales per holiday vs non-holiday baseline</div>
+            <div class="chart-sub">Average sales per store-department in each holiday week vs non-holiday weeks (raw)</div>
           </div>
         </div>
         <div class="chart-wrap">
@@ -214,7 +214,7 @@
         <div class="chart-card-header">
           <div>
             <div class="chart-title">Seasonal Pattern</div>
-            <div class="chart-sub">Average sales across meteorological seasons</div>
+            <div class="chart-sub">Average sales per store-department-week by season (axis starts at zero)</div>
           </div>
         </div>
         <div class="chart-wrap radar-wrap">
@@ -233,8 +233,8 @@
       <div class="chart-card">
         <div class="chart-card-header">
           <div>
-            <div class="chart-title">Feature Importance &mdash; Random Forest</div>
-            <div class="chart-sub">Relative importance of each feature in store-department forecasts</div>
+            <div class="chart-title">Permutation Importance &mdash; LightGBM</div>
+            <div class="chart-sub">How much holdout WMAE gets worse when each feature is shuffled</div>
           </div>
         </div>
         <div class="chart-wrap">
@@ -246,7 +246,7 @@
         <div class="chart-card-header">
           <div>
             <div class="chart-title">Pearson Correlation with Weekly Sales</div>
-            <div class="chart-sub">Linear correlation of numeric features against weekly revenue</div>
+            <div class="chart-sub">Linear correlation with weekly sales &mdash; the macro columns sit near zero (see EDA notebook)</div>
           </div>
         </div>
         <div class="chart-wrap">
@@ -266,7 +266,11 @@
         <div class="chart-card-header">
           <div>
             <div class="chart-title">Markdown Channel Correlation</div>
-            <div class="chart-sub">Pearson correlation of the 5 markdown channels with weekly sales</div>
+            <div class="chart-sub">Markdowns run ~2&times; higher on holiday weeks; without those weeks the correlation disappears</div>
+          </div>
+          <div class="legend-row">
+            <span class="dot gold"></span><span>All weeks</span>
+            <span class="dot teal"></span><span>Non-holiday</span>
           </div>
         </div>
         <div class="chart-wrap">
