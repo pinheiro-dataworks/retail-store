@@ -20,7 +20,7 @@ def data():
 
 @pytest.fixture(scope="module")
 def context():
-    return json.loads((WEB_DATA / "rag_context.json").read_text(encoding="utf-8"))
+    return json.loads((WEB_DATA / "assistant_context.json").read_text(encoding="utf-8"))
 
 
 def _numbers(obj):

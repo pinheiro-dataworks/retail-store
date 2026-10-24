@@ -30,7 +30,7 @@ def main() -> None:
     result = run(load_panel(args.raw_dir), quick=args.quick)
     payload = dashboard_payload(result)
     write_json(payload, args.out_dir / "dashboard_data.json")
-    write_json(assistant_context(payload), args.out_dir / "rag_context.json", indent=2)
+    write_json(assistant_context(payload), args.out_dir / "assistant_context.json", indent=2)
 
     ARTIFACTS_DIR.mkdir(exist_ok=True)
     result.tuning_table.to_csv(ARTIFACTS_DIR / "tuning.csv", index=False)
