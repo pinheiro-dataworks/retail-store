@@ -51,21 +51,21 @@
   ],
   "top_features": [
     "type_enc",
-    "is_holiday",
     "store_size",
+    "is_holiday",
     "month_num",
     "week_of_year"
   ],
   "ml_performance": {
     "random_forest": {
-      "R2": 0.38493339432179174,
-      "MAE": 26418.7659896872,
-      "RMSE": 36388.38973998474
+      "R2": 0.44609268983856876,
+      "MAE": 28057.456361945005,
+      "RMSE": 39265.3186523974
     },
     "gradient_boosting": {
-      "R2": 0.429029056736527,
-      "MAE": 25591.703312922316,
-      "RMSE": 35059.74615274402
+      "R2": 0.44871426354787336,
+      "MAE": 27990.717055829664,
+      "RMSE": 39172.289538011355
     }
   },
   "top_departments": [
