@@ -64,7 +64,10 @@ def expanding_window_folds(dates: pd.Series, n_folds: int, test_weeks: int,
         start_idx = len(weeks) - k * test_weeks
         test_start = weeks[start_idx]
         stop_idx = start_idx + test_weeks
-        test_end = weeks[stop_idx] if stop_idx < len(weeks) else weeks.iloc[-1] + pd.Timedelta(days=1)
+        if stop_idx < len(weeks):
+            test_end = weeks[stop_idx]
+        else:
+            test_end = weeks.iloc[-1] + pd.Timedelta(days=1)
         folds.append(Fold(train_end=test_start, test_start=test_start, test_end=test_end))
     return folds
 

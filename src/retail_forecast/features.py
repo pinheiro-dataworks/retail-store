@@ -21,7 +21,7 @@ def lag_steps(horizon: int) -> list[int]:
     if horizon < 1:
         raise ValueError("horizon must be >= 1")
     steps = {horizon, horizon + 1, horizon + 3}
-    if SEASONAL_LAG >= horizon:
+    if horizon <= SEASONAL_LAG:
         steps.add(SEASONAL_LAG)
     return sorted(steps)
 
