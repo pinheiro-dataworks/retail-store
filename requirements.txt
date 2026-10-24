@@ -1,0 +1,6 @@
+# Runtime dependencies for the training / export pipeline.
+# Versions are pinned so that the published metrics can be reproduced.
+pandas==2.3.3
+numpy==2.3.5
+scikit-learn==1.8.0
+lightgbm==4.7.0
