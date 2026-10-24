@@ -106,6 +106,19 @@ def correlations(df: pd.DataFrame) -> pd.Series:
     return data[CORR_COLUMNS].corrwith(data[TARGET]).sort_values(ascending=False)
 
 
+def markdown_correlations(df: pd.DataFrame) -> pd.DataFrame:
+    """Markdown vs. sales correlation, on all weeks and on non-holiday weeks only.
+
+    Markdowns run about twice as high on holiday weeks, so the all-weeks number
+    mostly measures the holiday effect. The non-holiday column removes it.
+    """
+    non_hol = df[df["is_holiday"] == 0]
+    return pd.DataFrame({
+        "all_weeks": df[MARKDOWNS].corrwith(df[TARGET]),
+        "non_holiday": non_hol[MARKDOWNS].corrwith(non_hol[TARGET]),
+    })
+
+
 def top_departments(df: pd.DataFrame, n: int = 10) -> pd.Series:
     return df.groupby("department")[TARGET].sum().nlargest(n)
 

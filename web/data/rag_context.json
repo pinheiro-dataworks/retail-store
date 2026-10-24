@@ -1,10 +1,10 @@
 {
-  "dataset_summary": "Retail Store Sales Forecasting Dashboard \u2014 based on the Walmart Recruiting Store Sales Forecasting dataset adapted by Noopur Bhatt. The dataset covers 50 Walmart retail stores across 4 US regions (East, North, South, West) with store types A, B, and C. Period: 2022-01-01 to 2024-12-21. Total revenue: $8.81B across 156,000 weekly sales records spanning 20 departments.",
+  "dataset_summary": "Retail Store weekly sales dashboard. Data: an adapted version of the Kaggle 'Walmart Recruiting - Store Sales Forecasting' dataset (published by Noopur Bhatt), not the original Walmart data. 50 stores, 20 departments, 4 US regions, store types A/B/C. Period: 2022-01-01 to 2024-12-21. Total revenue: $8.81B.",
   "kpis": {
     "total_sales": "$8.81B",
-    "avg_weekly_sales": "$56.5K per store-department",
-    "holiday_sales_lift": "+59.9% above non-holiday baseline",
-    "max_store_revenue": "$303.2M (best-performing single store)"
+    "avg_weekly_sales": "$56.5K per store-department-week",
+    "holiday_sales_lift": "+59.9% raw, +60.0% controlled for store x department",
+    "max_store_revenue": "$303.2M (best single store)"
   },
   "store_types": {
     "A": {
@@ -29,19 +29,12 @@
     "South": "$1.96B",
     "West": "$1.48B"
   },
-  "holidays": [
-    "Black Friday",
-    "Christmas",
-    "Labor Day",
-    "New Year",
-    "Independence Day"
-  ],
   "holiday_lift_by_event": {
-    "Black Friday": "+104.3%",
-    "Christmas": "+76.5%",
-    "Labor Day": "+41.8%",
-    "New Year": "+34.0%",
-    "Independence Day": "+16.7%"
+    "Black Friday": "+103.4%",
+    "Christmas": "+76.4%",
+    "Labor Day": "+42.1%",
+    "New Year": "+34.6%",
+    "Independence Day": "+18.0%"
   },
   "seasons": [
     "Spring",
@@ -50,24 +43,56 @@
     "Winter"
   ],
   "top_features": [
-    "type_enc",
-    "store_size",
-    "is_holiday",
-    "month_num",
-    "week_of_year"
+    "expanding_mean",
+    "holiday_name",
+    "store_id",
+    "department",
+    "store_size"
   ],
-  "ml_performance": {
-    "random_forest": {
-      "R2": 0.44609268983856876,
-      "MAE": 28057.456361945005,
-      "RMSE": 39265.3186523974
-    },
-    "gradient_boosting": {
-      "R2": 0.44871426354787336,
-      "MAE": 27990.717055829664,
-      "RMSE": 39172.289538011355
-    }
+  "model_evaluation": {
+    "protocol": "Time-based holdout: trained before 2024-07-01, tested 2024-07-01 to 2024-12-21, one-week-ahead.",
+    "best_model": "LightGBM with lag/rolling features",
+    "wmae": 31850,
+    "wape_pct": 43.0,
+    "bias_pct": 0.5,
+    "seasonal_naive_wmae": 42545,
+    "skill_vs_seasonal_naive_pct": 25.1,
+    "interval_coverage_80_pct": 78.6
   },
+  "forecast_next_weeks": [
+    {
+      "week": "2024-12-28",
+      "total_forecast": "$93.0M"
+    },
+    {
+      "week": "2025-01-04",
+      "total_forecast": "$70.8M"
+    },
+    {
+      "week": "2025-01-11",
+      "total_forecast": "$55.2M"
+    },
+    {
+      "week": "2025-01-18",
+      "total_forecast": "$54.9M"
+    },
+    {
+      "week": "2025-01-25",
+      "total_forecast": "$55.0M"
+    },
+    {
+      "week": "2025-02-01",
+      "total_forecast": "$55.1M"
+    },
+    {
+      "week": "2025-02-08",
+      "total_forecast": "$54.9M"
+    },
+    {
+      "week": "2025-02-15",
+      "total_forecast": "$55.0M"
+    }
+  ],
   "top_departments": [
     "Dept 20",
     "Dept 19",

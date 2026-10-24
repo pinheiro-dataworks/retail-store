@@ -45,9 +45,11 @@ const fmt = (v, decimals = 0) => new Intl.NumberFormat('en-US', {
 }).format(v);
 
 const fmtShort = (v) => {
-  if (Math.abs(v) >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
-  if (Math.abs(v) >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
-  if (Math.abs(v) >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+  const sign = v < 0 ? '-' : '';
+  const a = Math.abs(v);
+  if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(2)}B`;
+  if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(1)}M`;
+  if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(1)}K`;
   return fmt(v);
 };
 
@@ -115,8 +117,12 @@ function renderAll(data) {
   renderPearsonCorr(data.pearson_correlation);
   renderMarkdownCorr(data.markdown_correlation);
   renderTopDepts(data.top_departments);
-  renderMLModels(data.ml_models);
-  renderActualVsPred(data.actual_vs_predicted);
+  renderEvaluation(data.evaluation);
+  renderHoldoutSeries(data.evaluation.weekly);
+  renderWeeklyError(data.evaluation.weekly);
+  renderResiduals(data.evaluation.residuals);
+  renderHorizons(data.evaluation.horizons);
+  renderForecast(data.forecast);
 }
 
 /* ── Update charts driven by filters ───────────────────────────────────── */
@@ -144,6 +150,7 @@ function updateFilteredCharts(data) {
   document.getElementById('kpi-total-sales').textContent = fmtShort(total);
   document.getElementById('kpi-avg-weekly').textContent  = fmtShort(avg);
   document.getElementById('kpi-holiday-lift').textContent = (holRows.length ? `+${lift.toFixed(1)}%` : 'N/A');
+  document.getElementById('kpi-holiday-lift-sub').textContent = 'Raw, for the filtered data';
 
   // ── Monthly revenue
   const byMonth = {};
@@ -202,6 +209,8 @@ function renderKPIs(kpis) {
   document.getElementById('kpi-total-sales').textContent   = fmtShort(kpis.total_sales);
   document.getElementById('kpi-avg-weekly').textContent    = fmtShort(kpis.avg_weekly_sales);
   document.getElementById('kpi-holiday-lift').textContent  = `+${kpis.holiday_lift_pct.toFixed(1)}%`;
+  document.getElementById('kpi-holiday-lift-sub').textContent =
+    `Raw · +${kpis.holiday_lift_controlled_pct.toFixed(1)}% within the same store-dept`;
   document.getElementById('kpi-max-store').textContent     = fmtShort(kpis.max_store_revenue);
 }
 
@@ -451,6 +460,7 @@ function renderSeasonalRadar(seasonal) {
           grid: { color: 'rgba(37,48,80,0.6)' },
           angleLines: { color: 'rgba(37,48,80,0.6)' },
           pointLabels: { color: C.text2, font: { size: 12, weight: '600' } },
+          beginAtZero: true,
           ticks: { display: false },
         },
       },
@@ -458,10 +468,10 @@ function renderSeasonalRadar(seasonal) {
   });
 }
 
-/* ════════════════════════════ FEATURE IMPORTANCE ══════════════════════════ */
+/* ═══════════════════════ PERMUTATION IMPORTANCE ═══════════════════════════ */
 function renderFeatureImportance(features) {
-  const top12 = features.slice(0, 12);
-  const ctx   = document.getElementById('chart-feat-importance').getContext('2d');
+  const top = features.filter(f => f.wmae_increase > 0).slice(0, 12);
+  const ctx = document.getElementById('chart-feat-importance').getContext('2d');
 
   const gradient = ctx.createLinearGradient(300, 0, 0, 0);
   gradient.addColorStop(0,   C.gold);
@@ -471,9 +481,9 @@ function renderFeatureImportance(features) {
   charts.featImportance = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: top12.map(f => f.feature.replace(/_/g, ' ')),
+      labels: top.map(f => f.feature.replace(/_/g, ' ')),
       datasets: [{
-        data: top12.map(f => (f.importance * 100).toFixed(2)),
+        data: top.map(f => f.wmae_increase),
         backgroundColor: gradient,
         borderRadius: 4,
         borderSkipped: false,
@@ -485,10 +495,14 @@ function renderFeatureImportance(features) {
       indexAxis: 'y',
       plugins: { legend: { display: false }, tooltip: {
         backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
-        callbacks: { label: ctx => `${ctx.parsed.x.toFixed(2)}%` },
+        callbacks: {
+          label: c => `+${fmtShort(c.parsed.x)} WMAE when shuffled ` +
+                      `(${(top[c.dataIndex].importance * 100).toFixed(1)}% of total)`,
+        },
       }},
       scales: {
-        x: { grid: BASE_GRID, ticks: { callback: v => v + '%' } },
+        x: { grid: BASE_GRID, ticks: { callback: v => fmtShort(v) },
+             title: { display: true, text: 'WMAE increase', color: C.text3 } },
         y: { grid: { display: false }, ticks: { font: { size: 10 } } },
       },
     },
@@ -532,27 +546,30 @@ function renderPearsonCorr(pearson) {
 /* ════════════════════════════ MARKDOWN CORR ═══════════════════════════════ */
 function renderMarkdownCorr(markdown) {
   const ctx = document.getElementById('chart-markdown-corr').getContext('2d');
-  const blues = ['#42a5f5','#5c6bc0','#7e57c2','#ec407a','#26c6da'];
 
   charts.markdownCorr = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: markdown.map(m => m.markdown),
-      datasets: [{
-        data: markdown.map(m => m.correlation),
-        backgroundColor: blues.map(c => alpha(c, 0.75)),
-        borderColor: blues,
-        borderWidth: 1.5,
-        borderRadius: 6,
-        borderSkipped: false,
-      }],
+      datasets: [
+        {
+          label: 'All weeks', data: markdown.map(m => m.correlation),
+          backgroundColor: alpha(C.gold, 0.75), borderColor: C.gold, borderWidth: 1.5,
+          borderRadius: 6, borderSkipped: false,
+        },
+        {
+          label: 'Non-holiday weeks', data: markdown.map(m => m.correlation_non_holiday),
+          backgroundColor: alpha(C.teal, 0.75), borderColor: C.teal, borderWidth: 1.5,
+          borderRadius: 6, borderSkipped: false,
+        },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: {
         backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
-        callbacks: { label: ctx => ctx.parsed.y.toFixed(4) },
+        callbacks: { label: c => `${c.dataset.label}: r = ${c.parsed.y.toFixed(4)}` },
       }},
       scales: {
         x: { grid: { display: false } },
@@ -598,76 +615,283 @@ function renderTopDepts(depts) {
   });
 }
 
-/* ════════════════════════════ ML METRICS ══════════════════════════════════ */
-function renderMLModels(ml) {
-  const rf = ml.random_forest;
-  const gb = ml.gradient_boosting;
+/* ═══════════════════════════ MODEL EVALUATION ═════════════════════════════ */
+const pct = (v, digits = 1, signed = false) =>
+  `${signed && v > 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`;
 
-  document.getElementById('rf-r2-badge').textContent  = `R² ${rf.r2.toFixed(3)}`;
-  document.getElementById('rf-r2').textContent        = rf.r2.toFixed(3);
-  document.getElementById('rf-mae').textContent       = fmtShort(rf.mae);
-  document.getElementById('rf-rmse').textContent      = fmtShort(rf.rmse);
+function renderEvaluation(ev) {
+  const best  = ev.models.find(m => m.model === 'LightGBM + lags');
+  const naive = ev.models.find(m => m.model.startsWith('Seasonal naive'));
+  const h     = ev.holdout;
 
-  document.getElementById('gb-r2-badge').textContent  = `R² ${gb.r2.toFixed(3)}`;
-  document.getElementById('gb-r2').textContent        = gb.r2.toFixed(3);
-  document.getElementById('gb-mae').textContent       = fmtShort(gb.mae);
-  document.getElementById('gb-rmse').textContent      = fmtShort(gb.rmse);
+  document.getElementById('eval-wmae').textContent     = fmtShort(best.wmae);
+  document.getElementById('eval-skill').textContent    = pct(best.skill_vs_naive, 1, true);
+  document.getElementById('eval-wape').textContent     = pct(best.wape);
+  document.getElementById('eval-bias-sub').textContent = `Bias ${pct(best.bias, 1, true)} (+ = over-forecast)`;
+  document.getElementById('eval-coverage').textContent = pct(ev.interval.coverage);
+  document.getElementById('eval-protocol').textContent =
+    `One-week-ahead forecasts · trained on data before ${h.test_start}, ` +
+    `scored on ${h.test_start} → ${h.test_end} (${h.test_rows.toLocaleString('en-US')} store-dept-weeks)`;
+
+  const bestWmae = Math.min(...ev.models.map(m => m.wmae));
+  document.getElementById('model-table-body').innerHTML = ev.models.map(m => {
+    const cls = m.kind === 'baseline' ? 'baseline' : (m.wmae === bestWmae ? 'best' : '');
+    const skillCls = m.skill_vs_naive < 0 ? 'skill-neg' : '';
+    return `<tr class="${cls}">
+      <td>${m.model}${m.kind === 'baseline' ? '<span class="kind-tag">baseline</span>' : ''}</td>
+      <td>${fmtShort(m.wmae)}</td>
+      <td>${pct(m.wape)}</td>
+      <td>${pct(m.bias, 1, true)}</td>
+      <td>${fmtShort(m.mae)}</td>
+      <td>${fmtShort(m.rmse)}</td>
+      <td class="${skillCls}">${pct(m.skill_vs_naive, 1, true)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('model-table-notes').innerHTML =
+    `WMAE weights holiday weeks 5&times;, as in the original Kaggle competition. ` +
+    `Skill is measured against the seasonal naive forecast (same week last year, ${fmtShort(naive.wmae)} WMAE). ` +
+    `Adding temperature, fuel price, CPI, unemployment and markdowns back changes WMAE from ` +
+    `${fmt(ev.ablation.without_exogenous_wmae)} to ${fmt(ev.ablation.with_exogenous_wmae)}, ` +
+    `so they are left out of the model.`;
 }
 
-/* ════════════════════════ ACTUAL VS PREDICTED ═════════════════════════════ */
-function renderActualVsPred(avp) {
-  const ctx = document.getElementById('chart-actual-vs-pred').getContext('2d');
+/* Shades holiday weeks behind a category-axis chart. */
+const holidayShading = (flags) => ({
+  id: 'holidayShading',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales: { x } } = chart;
+    const half = (x.getPixelForValue(1) - x.getPixelForValue(0)) / 2;
+    ctx.save();
+    ctx.fillStyle = alpha(C.red, 0.10);
+    flags.forEach((f, i) => {
+      if (!f) return;
+      const cx = x.getPixelForValue(i);
+      ctx.fillRect(cx - half, chartArea.top, half * 2, chartArea.bottom - chartArea.top);
+    });
+    ctx.restore();
+  },
+});
 
-  const scatter = avp.actual.map((a, i) => ({ x: a, y: avp.predicted_rf[i] }));
-  const maxVal  = Math.max(...avp.actual, ...avp.predicted_rf);
-  const perfect = [{ x: 0, y: 0 }, { x: maxVal, y: maxVal }];
+const weekLabel = (w, i) => (w.holiday[i] ? `${w.dates[i]} · ${w.holiday[i]}` : w.dates[i]);
 
-  charts.actualVsPred = new Chart(ctx, {
-    type: 'scatter',
+function renderHoldoutSeries(w) {
+  const ctx = document.getElementById('chart-holdout-series').getContext('2d');
+  const line = (label, data, color, extra = {}) => ({
+    label, data, borderColor: color, backgroundColor: color,
+    borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.25, ...extra,
+  });
+  charts.holdoutSeries = new Chart(ctx, {
+    type: 'line',
     data: {
+      labels: w.dates,
+      datasets: [
+        line('Actual', w.actual, C.text, { borderWidth: 2.5 }),
+        line('LightGBM', w.lightgbm, C.teal),
+        line('Seasonal naive', w.seasonal_naive, C.gold, { borderDash: [5, 4], borderWidth: 1.5 }),
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        callbacks: {
+          title: items => weekLabel(w, items[0].dataIndex),
+          label: c => `${c.dataset.label}: ${fmtShort(c.parsed.y)}`,
+        },
+      }},
+      scales: {
+        x: { grid: BASE_GRID, ticks: { maxTicksLimit: 10, maxRotation: 0 } },
+        y: { grid: BASE_GRID, ticks: { callback: v => fmtShort(v) } },
+      },
+    },
+    plugins: [holidayShading(w.is_holiday)],
+  });
+}
+
+function renderWeeklyError(w) {
+  const ctx = document.getElementById('chart-weekly-error').getContext('2d');
+  charts.weeklyError = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: w.dates,
       datasets: [
         {
-          label: 'Actual vs Predicted',
-          data: scatter,
-          backgroundColor: alpha(C.gold, 0.55),
-          borderColor: C.gold,
-          borderWidth: 1,
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          label: 'LightGBM', data: w.mae_lightgbm,
+          backgroundColor: w.is_holiday.map(h => alpha(h ? C.red : C.teal, 0.8)),
+          borderRadius: 3, borderSkipped: false,
         },
         {
-          label: 'Perfect Fit',
-          data: perfect,
-          type: 'line',
-          borderColor: C.teal,
-          borderWidth: 2,
-          borderDash: [6, 4],
-          pointRadius: 0,
-          fill: false,
-          tension: 0,
+          label: 'Seasonal naive', data: w.mae_seasonal_naive, type: 'line',
+          borderColor: C.gold, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, tension: 0.25,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
-          callbacks: {
-            label: ctx => ctx.dataset.label === 'Perfect Fit'
-              ? 'Perfect Fit Line'
-              : `Actual: ${fmtShort(ctx.parsed.x)}  Pred: ${fmtShort(ctx.parsed.y)}`,
-          },
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        callbacks: {
+          title: items => weekLabel(w, items[0].dataIndex),
+          label: c => `${c.dataset.label} MAE: ${fmtShort(c.parsed.y)}`,
         },
-      },
+      }},
       scales: {
-        x: { grid: BASE_GRID, title: { display: true, text: 'Actual Weekly Sales ($)', color: C.text3 }, ticks: { callback: v => fmtShort(v) } },
-        y: { grid: BASE_GRID, title: { display: true, text: 'Predicted Weekly Sales ($)', color: C.text3 }, ticks: { callback: v => fmtShort(v) } },
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 10, maxRotation: 0 } },
+        y: { grid: BASE_GRID, ticks: { callback: v => fmtShort(v) } },
       },
     },
   });
+}
+
+function renderResiduals(r) {
+  const ctx = document.getElementById('chart-residuals').getContext('2d');
+  const mids = r.bin_start.map((s, i) => (s + r.bin_end[i]) / 2);
+  charts.residuals = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: mids.map(m => fmtShort(m)),
+      datasets: [{
+        data: r.count,
+        backgroundColor: mids.map(m => alpha(m < 0 ? C.gold : C.teal, 0.75)),
+        borderRadius: 2, barPercentage: 1, categoryPercentage: 0.95,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        callbacks: {
+          title: items => {
+            const i = items[0].dataIndex;
+            return `${fmtShort(r.bin_start[i])} to ${fmtShort(r.bin_end[i])}`;
+          },
+          label: c => `${c.parsed.y.toLocaleString('en-US')} store-dept-weeks`,
+        },
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0 } },
+        y: { grid: BASE_GRID, ticks: { callback: v => v.toLocaleString('en-US') } },
+      },
+    },
+  });
+}
+
+function renderHorizons(hz) {
+  const ctx = document.getElementById('chart-horizons').getContext('2d');
+  charts.horizons = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: hz.map(h => `${h.horizon}w`),
+      datasets: [
+        {
+          label: 'LightGBM', data: hz.map(h => h.wmae),
+          borderColor: C.teal, backgroundColor: C.teal, borderWidth: 2, pointRadius: 4,
+        },
+        {
+          label: 'Seasonal naive', data: hz.map(h => h.naive_wmae),
+          borderColor: C.gold, borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        callbacks: {
+          title: items => `${hz[items[0].dataIndex].horizon}-week-ahead`,
+          label: c => `${c.dataset.label} WMAE: ${fmtShort(c.parsed.y)}`,
+          afterBody: items => `Skill vs naive: ${pct(hz[items[0].dataIndex].skill_vs_naive, 1, true)}`,
+        },
+      }},
+      scales: {
+        x: { grid: BASE_GRID, title: { display: true, text: 'Weeks ahead', color: C.text3 } },
+        y: { grid: BASE_GRID, beginAtZero: true, ticks: { callback: v => fmtShort(v) } },
+      },
+    },
+  });
+}
+
+/* ═══════════════════════════════ FORECAST ═════════════════════════════════ */
+function renderForecast(f) {
+  const ctx = document.getElementById('chart-forecast').getContext('2d');
+  const hist = f.history;
+  const labels = [...hist.dates, ...f.dates];
+  const pad = new Array(hist.dates.length - 1).fill(null);
+  const lastActual = hist.actual[hist.actual.length - 1];
+  // Forecast and band start at the last actual week so the lines join up.
+  const fc    = [...pad, lastActual, ...f.forecast];
+  const lower = [...pad, lastActual, ...f.lower];
+  const upper = [...pad, lastActual, ...f.upper];
+  const label = d => (f.holidays[d] ? `${d} · ${f.holidays[d]}` : d);
+
+  charts.forecast = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Upper', data: upper, borderWidth: 0, pointRadius: 0, fill: false },
+        {
+          label: '80% band', data: lower, borderWidth: 0, pointRadius: 0,
+          backgroundColor: alpha(C.teal, 0.18), fill: '-1',
+        },
+        {
+          label: 'Actual', data: [...hist.actual, ...new Array(f.dates.length).fill(null)],
+          borderColor: C.text, borderWidth: 2.5, pointRadius: 0, tension: 0.25,
+        },
+        {
+          label: 'Forecast', data: fc, borderColor: C.teal, borderWidth: 2.5,
+          borderDash: [6, 4], pointRadius: fc.map((v, i) => (i >= hist.dates.length ? 4 : 0)),
+          pointBackgroundColor: C.teal, tension: 0.25,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+        filter: item => item.raw !== null && item.dataset.label !== 'Upper'
+          && !(item.dataset.label !== 'Actual' && item.dataIndex < hist.dates.length),
+        callbacks: {
+          title: items => label(labels[items[0].dataIndex]),
+          label: c => {
+            if (c.dataset.label === '80% band') {
+              const j = c.dataIndex - hist.dates.length;
+              return `80% band: ${fmtShort(f.lower[j])} – ${fmtShort(f.upper[j])}`;
+            }
+            return `${c.dataset.label}: ${fmtShort(c.parsed.y)}`;
+          },
+        },
+      }},
+      scales: {
+        x: { grid: BASE_GRID, ticks: { maxTicksLimit: 12, maxRotation: 0 } },
+        y: { grid: BASE_GRID, ticks: { callback: v => fmtShort(v) } },
+      },
+    },
+  });
+
+  document.getElementById('forecast-sub').textContent =
+    `${f.dates[0]} → ${f.dates[f.dates.length - 1]} · one direct LightGBM model per horizon, refit on all history`;
+
+  const types = Object.keys(f.by_store_type).sort();
+  document.getElementById('forecast-table-head').innerHTML =
+    `<tr><th>Week</th><th>Total</th><th>80% band</th>${types.map(t => `<th>Type ${t}</th>`).join('')}</tr>`;
+  document.getElementById('forecast-table-body').innerHTML = f.dates.map((d, i) => `
+    <tr>
+      <td>${d}${f.holidays[d] ? `<span class="kind-tag">${f.holidays[d]}</span>` : ''}</td>
+      <td>${fmtShort(f.forecast[i])}</td>
+      <td>${fmtShort(f.lower[i])} – ${fmtShort(f.upper[i])}</td>
+      ${types.map(t => `<td>${fmtShort(f.by_store_type[t][i])}</td>`).join('')}
+    </tr>`).join('');
 }
 
 /* ══════════════════════════════ FILTER PANEL ══════════════════════════════ */

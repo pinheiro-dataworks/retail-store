@@ -17,7 +17,7 @@
     <img src="img/logo.png" alt="Retail Store" />
   </a>
   <nav class="nav-actions">
-    <button class="nav-btn" id="btn-chat-ia" onclick="scrollToChat()">Chat IA</button>
+    <button class="nav-btn" id="btn-chat-ia" onclick="scrollToChat()">AI Chat</button>
     <button class="nav-btn nav-btn-outline" id="btn-filters" onclick="toggleFilters()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
       Filters
@@ -101,7 +101,7 @@
         <div class="kpi-top-bar gold"></div>
         <div class="kpi-value positive" id="kpi-holiday-lift">—</div>
         <div class="kpi-title">Holiday Sales Lift</div>
-        <div class="kpi-sub">vs Non-Holiday Baseline</div>
+        <div class="kpi-sub" id="kpi-holiday-lift-sub">Raw, vs non-holiday weeks</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top-bar purple"></div>
@@ -183,7 +183,7 @@
         </div>
         <div class="legend-row">
           <span class="dot gold"></span><span>Type A</span>
-          <span class="dot teal"></span><span>Type B</span>
+          <span class="dot cyan"></span><span>Type B</span>
           <span class="dot purple"></span><span>Type C</span>
         </div>
       </div>
@@ -202,7 +202,7 @@
         <div class="chart-card-header">
           <div>
             <div class="chart-title">Holiday Impact on Sales</div>
-            <div class="chart-sub">Average weekly sales per holiday vs non-holiday baseline</div>
+            <div class="chart-sub">Average sales per store-department in each holiday week vs non-holiday weeks (raw)</div>
           </div>
         </div>
         <div class="chart-wrap">
@@ -214,7 +214,7 @@
         <div class="chart-card-header">
           <div>
             <div class="chart-title">Seasonal Pattern</div>
-            <div class="chart-sub">Average sales across meteorological seasons</div>
+            <div class="chart-sub">Average sales per store-department-week by season (axis starts at zero)</div>
           </div>
         </div>
         <div class="chart-wrap radar-wrap">
@@ -233,8 +233,8 @@
       <div class="chart-card">
         <div class="chart-card-header">
           <div>
-            <div class="chart-title">Feature Importance &mdash; Random Forest</div>
-            <div class="chart-sub">Relative importance of each feature in store-department forecasts</div>
+            <div class="chart-title">Permutation Importance &mdash; LightGBM</div>
+            <div class="chart-sub">How much holdout WMAE gets worse when each feature is shuffled</div>
           </div>
         </div>
         <div class="chart-wrap">
@@ -246,7 +246,7 @@
         <div class="chart-card-header">
           <div>
             <div class="chart-title">Pearson Correlation with Weekly Sales</div>
-            <div class="chart-sub">Linear correlation of numeric features against weekly revenue</div>
+            <div class="chart-sub">Linear correlation with weekly sales &mdash; the macro columns sit near zero (see EDA notebook)</div>
           </div>
         </div>
         <div class="chart-wrap">
@@ -266,7 +266,11 @@
         <div class="chart-card-header">
           <div>
             <div class="chart-title">Markdown Channel Correlation</div>
-            <div class="chart-sub">Pearson correlation of the 5 markdown channels with weekly sales</div>
+            <div class="chart-sub">Markdowns run ~2&times; higher on holiday weeks; without those weeks the correlation disappears</div>
+          </div>
+          <div class="legend-row">
+            <span class="dot gold"></span><span>All weeks</span>
+            <span class="dot teal"></span><span>Non-holiday</span>
           </div>
         </div>
         <div class="chart-wrap">
@@ -289,91 +293,151 @@
     </div>
   </section>
 
-  <!-- ── ML Models ─────────────────────────────────────────────────────── -->
-  <section class="dash-section">
-    <div class="section-label">Machine Learning &mdash; Predictive Models</div>
+  <!-- ── Model Evaluation ──────────────────────────────────────────────── -->
+  <section class="dash-section" id="evaluation-section">
+    <div class="section-label">Model Evaluation &mdash; Time-Based Holdout</div>
 
-    <div class="ml-cards-grid">
-
-      <!-- Random Forest -->
-      <div class="ml-card">
-        <div class="ml-card-header">
-          <div>
-            <div class="ml-card-model">Random Forest</div>
-            <div class="ml-card-sub">Ensemble of decision trees with bagging</div>
-          </div>
-          <div class="r2-badge teal" id="rf-r2-badge">R² —</div>
-        </div>
-        <div class="ml-metrics-row">
-          <div class="ml-metric">
-            <div class="ml-metric-label">MAE</div>
-            <div class="ml-metric-value" id="rf-mae">—</div>
-          </div>
-          <div class="ml-metric">
-            <div class="ml-metric-label">R²</div>
-            <div class="ml-metric-value" id="rf-r2">—</div>
-          </div>
-          <div class="ml-metric">
-            <div class="ml-metric-label">RMSE</div>
-            <div class="ml-metric-value" id="rf-rmse">—</div>
-          </div>
-        </div>
-        <div class="ml-insights">
-          <div class="ml-insight-item">&#8226; Store size and store type are the strongest predictors</div>
-          <div class="ml-insight-item">&#8226; The model effectively captures structural patterns from weekly data</div>
-          <div class="ml-insight-item">&#8226; Bootstrap aggregation reduces individual tree variance</div>
-        </div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-top-bar teal"></div>
+        <div class="kpi-value" id="eval-wmae">—</div>
+        <div class="kpi-title">LightGBM WMAE</div>
+        <div class="kpi-sub">Holiday weeks weighted 5&times;</div>
       </div>
-
-      <!-- Gradient Boosting -->
-      <div class="ml-card">
-        <div class="ml-card-header">
-          <div>
-            <div class="ml-card-model">Gradient Boosting</div>
-            <div class="ml-card-sub">Sequential tree boosting with residual correction</div>
-          </div>
-          <div class="r2-badge gold" id="gb-r2-badge">R² —</div>
-        </div>
-        <div class="ml-metrics-row">
-          <div class="ml-metric">
-            <div class="ml-metric-label">MAE</div>
-            <div class="ml-metric-value" id="gb-mae">—</div>
-          </div>
-          <div class="ml-metric">
-            <div class="ml-metric-label">R²</div>
-            <div class="ml-metric-value" id="gb-r2">—</div>
-          </div>
-          <div class="ml-metric">
-            <div class="ml-metric-label">RMSE</div>
-            <div class="ml-metric-value" id="gb-rmse">—</div>
-          </div>
-        </div>
-        <div class="ml-insights">
-          <div class="ml-insight-item">&#8226; GB outperforms RF with better residual correction capability</div>
-          <div class="ml-insight-item">&#8226; MAE lower than RF: tighter prediction on typical weeks</div>
-          <div class="ml-insight-item">&#8226; Boosted trees learn holiday patterns more precisely</div>
-        </div>
+      <div class="kpi-card">
+        <div class="kpi-top-bar gold"></div>
+        <div class="kpi-value positive" id="eval-skill">—</div>
+        <div class="kpi-title">Skill vs Seasonal Naive</div>
+        <div class="kpi-sub">1 &minus; WMAE<sub>model</sub> / WMAE<sub>naive</sub></div>
       </div>
-
+      <div class="kpi-card">
+        <div class="kpi-top-bar purple"></div>
+        <div class="kpi-value" id="eval-wape">—</div>
+        <div class="kpi-title">WAPE</div>
+        <div class="kpi-sub" id="eval-bias-sub">Bias —</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top-bar cyan"></div>
+        <div class="kpi-value" id="eval-coverage">—</div>
+        <div class="kpi-title">80% Interval Coverage</div>
+        <div class="kpi-sub">Share of actuals inside the band</div>
+      </div>
     </div>
 
-    <!-- Actual vs Predicted Scatter -->
-    <div class="chart-card" style="margin-top: 20px;">
+    <div class="chart-card">
       <div class="chart-card-header">
         <div>
-          <div class="chart-title">Actual vs Predicted &mdash; Random Forest (test set, 200 samples)</div>
-          <div class="chart-sub">Predicted weekly sales vs ground truth &mdash; tighter cluster = better model fit</div>
+          <div class="chart-title">Model Comparison vs Baselines</div>
+          <div class="chart-sub" id="eval-protocol">One-week-ahead forecasts scored on a holdout the models never saw</div>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="model-table">
+          <thead>
+            <tr><th>Model</th><th>WMAE</th><th>WAPE</th><th>Bias</th><th>MAE</th><th>RMSE</th><th>Skill vs naive</th></tr>
+          </thead>
+          <tbody id="model-table-body"></tbody>
+        </table>
+      </div>
+      <div class="table-notes" id="model-table-notes"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Actual vs Forecast &mdash; Holdout Weeks</div>
+          <div class="chart-sub">Total weekly sales across all stores; shaded weeks are holidays</div>
         </div>
         <div class="legend-row">
-          <span class="dot gold"></span><span>Actual vs Pred RF</span>
-          <span class="dot teal"></span><span>Perfect Fit</span>
+          <span class="dot text"></span><span>Actual</span>
+          <span class="dot teal"></span><span>LightGBM</span>
+          <span class="dot gold"></span><span>Seasonal naive</span>
         </div>
       </div>
       <div class="chart-wrap tall">
-        <canvas id="chart-actual-vs-pred"></canvas>
+        <canvas id="chart-holdout-series"></canvas>
       </div>
     </div>
 
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Error by Week</div>
+          <div class="chart-sub">Mean absolute error per store-department in each holdout week &mdash; holiday weeks highlighted</div>
+        </div>
+        <div class="legend-row">
+          <span class="dot teal"></span><span>LightGBM</span>
+          <span class="dot gold"></span><span>Seasonal naive</span>
+          <span class="dot red"></span><span>Holiday week</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chart-weekly-error"></canvas>
+      </div>
+    </div>
+
+    <div class="two-col-grid">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-title">Residual Distribution &mdash; LightGBM</div>
+            <div class="chart-sub">Actual &minus; forecast per store-department-week (positive = under-forecast); outer bins hold the 0.5% tails</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-residuals"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-title">Error by Forecast Horizon</div>
+            <div class="chart-sub">One model per horizon (direct strategy), same holdout weeks</div>
+          </div>
+          <div class="legend-row">
+            <span class="dot teal"></span><span>LightGBM</span>
+            <span class="dot gold"></span><span>Seasonal naive</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-horizons"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── Forecast ──────────────────────────────────────────────────────── -->
+  <section class="dash-section" id="forecast-section">
+    <div class="section-label">Forecast &mdash; Next 8 Weeks</div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Total Weekly Sales Forecast</div>
+          <div class="chart-sub" id="forecast-sub">Direct LightGBM models refit on all history, one per horizon</div>
+        </div>
+        <div class="legend-row">
+          <span class="dot text"></span><span>Actual</span>
+          <span class="dot teal"></span><span>Forecast</span>
+          <span class="dot band"></span><span>80% band</span>
+        </div>
+      </div>
+      <div class="chart-wrap tall">
+        <canvas id="chart-forecast"></canvas>
+      </div>
+      <div class="table-scroll">
+        <table class="model-table forecast-table">
+          <thead id="forecast-table-head"></thead>
+          <tbody id="forecast-table-body"></tbody>
+        </table>
+      </div>
+      <div class="table-notes">
+        The band comes from how far the <em>total</em> forecast was off at each horizon on the
+        holdout. It reflects normal weeks better than holidays and should be read as a guide,
+        not a guarantee. Holiday flags for future weeks follow the calendar used in the data.
+      </div>
+    </div>
   </section>
 
   <!-- ── AI Assistant ───────────────────────────────────────────────────── -->
