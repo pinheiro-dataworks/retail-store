@@ -128,7 +128,7 @@ Browser ── POST /api/chat {message} ──► api/chat.js
                                           ├─ origin check (same-origin or ALLOWED_ORIGINS)
                                           ├─ validate message (≤ 1,000 chars)
                                           ├─ rate limit per IP (Upstash or in-memory)
-                                          └─ Groq llama-3.3-70b-versatile, temperature 0.2
+                                          └─ Groq openai/gpt-oss-120b, temperature 0.2
 ```
 
 - **API key.** `GROQ_API_KEY` is read from the Vercel environment. If it is
@@ -149,6 +149,7 @@ Directory).
 | Variable | Required | Purpose |
 |---|---|---|
 | `GROQ_API_KEY` | Recommended | Shared key, so visitors do not need their own |
+| `GROQ_MODEL` | No (default `openai/gpt-oss-120b`) | Groq model id, so a retired model can be swapped without a code change |
 | `RATE_LIMIT_PER_MINUTE` | No (default 10) | Requests per IP per minute |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | No | Rate-limit counters shared across instances |
 | `ALLOWED_ORIGINS` | No | Extra origins allowed to call the API, comma separated |
