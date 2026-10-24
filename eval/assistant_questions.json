@@ -1,0 +1,20 @@
+{
+  "description": "Questions with known answers for the dashboard assistant. 'fact' items must mention a value from assistant_context.json (source); 'refusal' items ask for something the context does not contain and the assistant should say so instead of making it up.",
+  "items": [
+    {"id": "store_count_a", "kind": "fact", "question": "How many Type A stores are there?", "source": "store_types.A.count", "accept": ["\\b26\\b"]},
+    {"id": "share_type_c", "kind": "fact", "question": "What share of total revenue comes from Type C stores?", "source": "store_types.C.share_revenue", "accept": ["4\\.6\\s?%"]},
+    {"id": "top_region", "kind": "fact", "question": "Which region sells the most?", "source": "regions.East", "accept": ["\\bEast\\b"]},
+    {"id": "total_sales", "kind": "fact", "question": "What is the total revenue in the dataset?", "source": "kpis.total_sales", "accept": ["8\\.81\\s?B", "8\\.81 billion"]},
+    {"id": "biggest_holiday", "kind": "fact", "question": "Which holiday gives the biggest sales lift?", "source": "holiday_lift_by_event.Black Friday", "accept": ["Black Friday"]},
+    {"id": "lift_july4", "kind": "fact", "question": "How much do sales go up in the Independence Day week?", "source": "holiday_lift_by_event.Independence Day", "accept": ["18(\\.0)?\\s?%"]},
+    {"id": "model_wmae", "kind": "fact", "question": "What is the WMAE of the best forecasting model?", "source": "model_evaluation.wmae", "accept": ["31,?850", "31\\.8\\d?\\s?K", "31\\.9\\s?K"]},
+    {"id": "skill", "kind": "fact", "question": "How much better is the model than the seasonal naive baseline?", "source": "model_evaluation.skill_vs_seasonal_naive_pct", "accept": ["25(\\.1)?\\s?%"]},
+    {"id": "naive_wmae", "kind": "fact", "question": "What WMAE does the seasonal naive baseline get?", "source": "model_evaluation.seasonal_naive_wmae", "accept": ["42,?545", "42\\.5\\s?K"]},
+    {"id": "protocol", "kind": "fact", "question": "How was the model evaluated? Which period was used for testing?", "source": "model_evaluation.protocol", "accept": ["2024-07-01", "July 2024", "July 1, 2024"]},
+    {"id": "coverage", "kind": "fact", "question": "How often do actual sales fall inside the 80% prediction interval?", "source": "model_evaluation.interval_coverage_80_pct", "accept": ["78\\.6\\s?%"]},
+    {"id": "forecast_first_week", "kind": "fact", "question": "What is the total sales forecast for the week of 2024-12-28?", "source": "forecast_next_weeks.0.total_forecast", "accept": ["93(\\.0)?\\s?M", "93(\\.0)? million"]},
+    {"id": "data_source", "kind": "fact", "question": "Is this real Walmart data?", "source": "dataset_summary", "accept": ["adapted", "not the original", "not real"]},
+    {"id": "refuse_store_week", "kind": "refusal", "question": "What were the exact sales of store 7, department 3 on 2023-03-04?", "source": null, "accept": ["not (available|included|in the|provided)", "(do|does)n.?t (have|include|contain)", "do not have", "no (data|information)", "unable to", "can(no|.)t (provide|answer|tell)"]},
+    {"id": "refuse_far_future", "kind": "refusal", "question": "What will total sales be in December 2025?", "source": null, "accept": ["not (available|included|in the|provided)", "(do|does)n.?t (have|include|contain)", "do not have", "only (covers|goes|extends|provides)", "no (forecast|data|information)", "unable to", "can(no|.)t (provide|answer|tell|predict)", "beyond"]}
+  ]
+}
