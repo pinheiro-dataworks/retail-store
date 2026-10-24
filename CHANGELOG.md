@@ -11,6 +11,11 @@ All notable changes to this project are documented here. The format follows
   so every chat request failed. The endpoint now uses `openai/gpt-oss-120b`
   with low reasoning effort, and the model id can be changed with the
   `GROQ_MODEL` variable.
+- **Assistant eval scoring.** gpt-oss writes narrow no-break spaces,
+  non-breaking hyphens and curly quotes, so correct answers failed the ASCII
+  patterns. Replies are normalised before matching, and the refusal patterns
+  now accept "does not include" and "cannot give". Against production the
+  assistant scores 15/15 (13 facts, 2 refusals).
 
 ## [2.0.0] - 2026-10-24
 
